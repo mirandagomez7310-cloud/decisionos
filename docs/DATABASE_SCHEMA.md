@@ -1,0 +1,155 @@
+# DecisionOS — Modelo de datos inicial
+
+Estado: diseño (fase 0). Ninguna migración escrita. Las tablas se crean fase a fase (`ROADMAP.md`); este documento se actualiza con cada migración. Postgres en Supabase, esquema `public`.
+
+## Convenciones
+
+- Nombres en inglés, `snake_case`, tablas en plural. Columnas de tiempo `created_at`, `updated_at` (`timestamptz`, trigger `set_updated_at`).
+- Claves: `id uuid default gen_random_uuid()`, salvo tablas de alto volumen e insert-only (`audit_log`, `import_rows`) con `bigint generated always as identity`.
+- **Toda tabla de tenant lleva `organization_id uuid not null references organizations(id)`** y RLS activado en la misma migración.
+- **Referencias entre tablas de tenant son compuestas**: `foreign key (organization_id, product_id) references products (organization_id, id)`. Cada tabla referenciada tiene `unique (organization_id, id)`. Así una fila nunca apunta a otra organización.
+- Dinero: `numeric(14,2)` para importes, `numeric(14,4)` para precios y costos unitarios, `numeric(14,3)` para cantidades. Nunca `float`. Moneda en `organizations.currency` (`char(3)`, por defecto `MXN`) y copiada en `sales.currency` para no cerrar la puerta a multi-moneda.
+- Fechas de negocio en `date` (`sold_on`, `due_on`, `snapshot_on`); los orígenes CSV rara vez traen hora.
+- Enums de Postgres para estados cerrados; `text` + `check` cuando el conjunto pueda crecer por organización.
+- Borrado: lógico (`active`, `status`) en datos de negocio; físico solo en `import_rows` al revertir una importación.
+
+## Roles y permisos (`org_role`)
+
+| Acción | viewer | analyst | admin | owner |
+|---|---|---|---|---|
+| Ver dashboards, módulos, insights, reports | ✔ | ✔ | ✔ | ✔ |
+| Marcar insights (visto, descartado, hecho) | | ✔ | ✔ | ✔ |
+| Importar y revertir importaciones | | ✔ | ✔ | ✔ |
+| Editar productos y clientes (catálogo) | | ✔ | ✔ | ✔ |
+| Gestionar miembros e invitaciones, ajustes, ver `audit_log` | | | ✔ | ✔ |
+| Facturación, borrar organización, transferir propiedad | | | | ✔ |
+
+## Funciones de autorización (base de todas las políticas)
+
+```sql
+create type public.org_role as enum ('owner', 'admin', 'analyst', 'viewer');
+
+-- Organizaciones del usuario actual (sin argumentos: Postgres la evalúa una vez por consulta como initplan)
+create function public.my_org_ids() returns setof uuid
+language sql stable security definer set search_path = '' as $$
+  select m.organization_id from public.memberships m where m.user_id = (select auth.uid());
+$$;
+
+-- Organizaciones donde el usuario actual tiene alguno de los roles
+create function public.my_org_ids_with_role(roles public.org_role[]) returns setof uuid
+language sql stable security definer set search_path = '' as $$
+  select m.organization_id from public.memberships m
+  where m.user_id = (select auth.uid()) and m.role = any(roles);
+$$;
+```
+
+Leen `memberships`, no el JWT: revocar acceso surte efecto en la siguiente consulta. No reciben la columna de la fila como argumento: una función con `organization_id` como parámetro se ejecutaría **por fila**, y las agregaciones sobre `sale_lines` son el camino caliente del producto. Con `organization_id in (select …)` el conjunto se calcula una vez por consulta. Se comprueba con `EXPLAIN (ANALYZE)` sobre las vistas de métricas en la fase 2 con datos reales; índice `(user_id, organization_id)` en `memberships`.
+
+Patrón de políticas por tabla (ejemplo `products`):
+
+```sql
+alter table public.products enable row level security;
+create policy products_select on public.products for select to authenticated
+  using (organization_id in (select public.my_org_ids()));
+create policy products_insert on public.products for insert to authenticated
+  with check (organization_id in (select public.my_org_ids_with_role('{owner,admin,analyst}')));
+create policy products_update on public.products for update to authenticated
+  using (organization_id in (select public.my_org_ids_with_role('{owner,admin,analyst}')))
+  with check (organization_id in (select public.my_org_ids_with_role('{owner,admin,analyst}')));
+create policy products_delete on public.products for delete to authenticated
+  using (organization_id in (select public.my_org_ids_with_role('{owner,admin}')));
+```
+
+`anon` no tiene políticas en ninguna tabla. La clave de servicio (jobs, importaciones) salta RLS: cada función de ese camino recibe `organization_id` explícito, lo escribe en cada fila y registra en `audit_log`.
+
+**Vistas.** Una vista normal se ejecuta con los permisos de su propietario y **salta las políticas de las tablas**. Toda vista de métricas se crea `with (security_invoker = true)` para que apliquen las políticas del usuario que consulta. Las vistas materializadas no admiten RLS ni `security_invoker`: si hace falta materializar, la vista vive en un esquema no expuesto por la API (`private`) y se lee a través de una función `security invoker` que filtra por `organization_id in (select public.my_org_ids())`.
+
+**Storage.** Un solo bucket privado `imports`; ruta `<organization_id>/<import_id>/<archivo>`. Políticas en `storage.objects` por el primer segmento de la ruta: lectura si `(storage.foldername(name))[1]::uuid in (select public.my_org_ids())`, escritura solo para `owner/admin/analyst` de esa organización. Subida y descarga desde el servidor con URL firmada de corta duración; tamaño máximo y tipo validados antes de firmar.
+
+## Tablas
+
+### Núcleo de tenant (fase 1)
+
+**organizations**
+`id` · `name text` · `slug text unique` (URL) · `country char(2) default 'MX'` · `currency char(3) default 'MXN'` · `timezone text default 'America/Mexico_City'` · `settings jsonb default '{}'` · `created_at` · `updated_at`.
+Lectura: miembros. Escritura: owner/admin. Creación: función `create_organization(name)` (`security definer`) que inserta la organización y la membresía `owner` del usuario en la misma transacción.
+
+**memberships**
+`organization_id` · `user_id uuid references auth.users` · `role org_role` · `created_at`. PK `(organization_id, user_id)`; índice `(user_id, organization_id)`.
+Lectura: miembros de la misma organización. Escritura: owner/admin, **pero una fila con `role = 'owner'` (crearla, cambiarla o borrarla) solo la toca un owner**, en la política y no solo en la UI; un owner no puede degradarse si es el último owner (trigger). Trigger que escribe en `audit_log` todo cambio.
+
+**invitations**
+`id` · `organization_id` · `email text` · `role org_role` · `token_hash text` · `expires_at` · `accepted_at null` · `created_by uuid` · `created_at`. Escritura: owner/admin. La aceptación la hace una función `security definer` que valida el token y crea la membresía.
+
+**audit_log** (insert-only)
+`id bigint identity` · `organization_id` · `actor_user_id uuid null` · `actor_kind text check in ('user','system','api')` · `action text` · `entity text` · `entity_id text` · `data jsonb` · `created_at`. Lectura: owner/admin. Sin políticas de update/delete. Índice `(organization_id, created_at desc)`.
+
+### Datos de negocio (fase 2)
+
+**products**
+`id` · `organization_id` · `sku text` · `name text` · `category text null` · `unit text null` · `standard_cost numeric(14,4) null` · `list_price numeric(14,4) null` · `active bool default true` · `created_at` · `updated_at`.
+`unique (organization_id, sku)` · `unique (organization_id, id)`.
+
+**customers**
+`id` · `organization_id` · `code text` · `name text` · `segment text null` · `credit_limit numeric(14,2) null` · `payment_terms_days int null` · `active bool default true` · `created_at` · `updated_at`.
+`unique (organization_id, code)` · `unique (organization_id, id)`.
+
+**sales** (cabecera: factura, remisión o pedido entregado)
+`id` · `organization_id` · `external_ref text` (folio del sistema origen) · `customer_id` · `sold_on date` · `status text check in ('completed','cancelled','returned')` · `currency char(3)` · `subtotal numeric(14,2)` · `tax numeric(14,2)` · `total numeric(14,2)` · `source_import_id uuid null` · `created_at`.
+`unique (organization_id, external_ref)` (reimportar el mismo folio actualiza, no duplica) · `unique (organization_id, id)` · FK compuesta a `customers`. Índice `(organization_id, sold_on)`.
+
+**sale_lines**
+`id` · `organization_id` · `sale_id` · `product_id` · `quantity numeric(14,3)` · `unit_price numeric(14,4)` · `unit_cost numeric(14,4) null` (costo en el momento de la venta; `null` si el origen no lo trae: las métricas de margen declaran cobertura) · `discount numeric(14,2) default 0` · `line_total numeric(14,2)`.
+FKs compuestas a `sales` y `products`. Índice `(organization_id, product_id)`.
+
+**inventory_snapshots** (existencias por fecha; los movimientos llegan cuando un origen los exporte)
+`organization_id` · `product_id` · `snapshot_on date` · `quantity numeric(14,3)` · `unit_cost numeric(14,4) null` · `source_import_id uuid null`. PK `(organization_id, product_id, snapshot_on)`.
+
+**receivables** (cuentas por cobrar)
+`id` · `organization_id` · `customer_id` · `sale_id uuid null` · `external_ref text` · `issued_on date` · `due_on date` · `amount numeric(14,2)` · `paid_amount numeric(14,2) default 0` · `source_import_id uuid null` · `created_at` · `updated_at`.
+`unique (organization_id, external_ref)`. El estado (abierta, vencida, pagada) se deriva en vista, no se almacena.
+
+### Importación y trabajos (fase 2)
+
+**imports**
+`id` · `organization_id` · `kind text check in ('sales','products','customers','inventory','receivables')` · `storage_path text` (bucket privado `imports/<org>/…`) · `original_filename text` · `status text check in ('pending','processing','done','failed','reverted')` · `column_mapping jsonb` · `row_count int` · `ok_count int` · `error_count int` · `created_by uuid` · `created_at` · `finished_at null`.
+
+**import_rows** (staging)
+`id bigint identity` · `import_id` · `organization_id` · `row_number int` · `raw jsonb` · `error text null`. Se consulta para mostrar errores por fila; se borra al revertir.
+
+**jobs**
+`id` · `organization_id uuid null` (null = sistema) · `kind text` · `payload jsonb` · `status text check in ('queued','running','done','failed')` · `attempts int default 0` · `max_attempts int default 3` · `run_after timestamptz default now()` · `locked_at null` · `locked_by text null` · `progress jsonb` · `last_error text null` · `created_at` · `finished_at null`.
+Índice parcial `(run_after) where status = 'queued'`. Solo la clave de servicio escribe; los miembros leen los de su organización (progreso de importación).
+
+### Inteligencia (fase 5)
+
+**insights**
+`id` · `organization_id` · `module text check in ('executive','sales','profit','inventory','cash')` · `kind insight_kind` (`fact`, `hypothesis`, `suggestion`) · `severity text check in ('info','warning','critical')` · `title text` · `body text` · `evidence jsonb` (métrica, periodo, ids de filas o consulta) · `metric_snapshot jsonb` (cifras en el momento de generarse) · `period_start date` · `period_end date` · `generated_by text check in ('rule','llm')` · `rule_key text null` · `status text check in ('new','seen','dismissed','done')` · `created_at`.
+Un `fact` solo lo genera una regla (`generated_by = 'rule'`); el LLM solo puede crear `hypothesis` y `suggestion`, y siempre con `evidence` que apunte a insights o métricas existentes. Esta restricción va en un `check` y en el adaptador.
+
+Las alertas son insights con `severity in ('warning','critical')`; el envío se registra en `alert_deliveries` (fase 5).
+
+### Previstas, no diseñadas
+
+`alert_rules`, `alert_deliveries`, `reports` (programados), `api_tokens` (fase 7), `subscriptions` y `plans` (fase 7). Todas con `organization_id` y el mismo patrón RLS.
+
+## Métricas en SQL
+
+Vistas `with (security_invoker = true)` (ver "Vistas" arriba: sin esa opción no aplican las políticas) que la aplicación consulta con rango de fechas: margen por producto y cliente, ventas por periodo con variación, rotación y días de inventario, capital inmovilizado, antigüedad de saldos. Cada vista declara su **cobertura** (por ejemplo, porcentaje de líneas con `unit_cost`). Se materializan por job, en el esquema `private` y tras una función que filtra por organización, solo si una consulta real supera el presupuesto de la página.
+
+## Tests pgTAP (uno por tabla, `supabase/tests/<tabla>_rls.test.sql`)
+
+1. `anon` no lee ni escribe.
+2. Cada rol hace lo que la matriz permite y nada más (escritura denegada seguida de lectura que prueba la fila intacta).
+3. **Denegación cruzada**: un `owner` de la organización A no ve, actualiza ni borra filas de B, y un `insert` con `organization_id` de B falla.
+4. Las FKs compuestas rechazan una referencia a otra organización.
+5. Cada vista de métricas: un miembro de A no obtiene filas de B (prueba que `security_invoker` está puesto).
+6. `storage.objects`: un miembro de A no lista, lee ni sube en el prefijo de B.
+
+## Orden de migraciones
+
+1. `0001_core`: `org_role`, `organizations`, `memberships`, `invitations`, `audit_log`, funciones `my_org_ids`, `my_org_ids_with_role`, `create_organization`, trigger de `updated_at`, políticas y tests.
+2. `0002_business`: `products`, `customers`, `sales`, `sale_lines`, `inventory_snapshots`, `receivables`.
+3. `0003_imports_jobs`: `imports`, `import_rows`, `jobs`, bucket privado `imports` con sus políticas en `storage.objects` y test cruzado.
+4. `0004_metrics_views`: vistas de métricas.
+5. `0005_insights`: `insight_kind`, `insights`. (`alert_deliveries` y `alert_rules` se diseñan en la fase 5, en una migración propia.)
