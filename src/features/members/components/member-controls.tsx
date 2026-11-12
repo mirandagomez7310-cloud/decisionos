@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useActionState, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import type { OrgRole } from '@/lib/supabase/types'
