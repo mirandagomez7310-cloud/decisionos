@@ -10,9 +10,9 @@ export function sanitizeNext(value: unknown): string {
     return '/'
   try {
     const url = new URL(value, 'https://internal.invalid')
-    return url.origin === 'https://internal.invalid'
-      ? url.pathname + url.search + url.hash
-      : '/'
+    if (url.origin !== 'https://internal.invalid') return '/'
+    // '/..//x' se normaliza a '//x': protocolo relativo, redirección abierta.
+    return '/' + url.pathname.replace(/^\/+/, '') + url.search + url.hash
   } catch {
     return '/'
   }

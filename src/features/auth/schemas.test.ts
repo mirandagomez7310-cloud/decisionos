@@ -27,6 +27,8 @@ describe('auth schema', () => {
       '/\nevil.test',
     ])
       expect(sanitizeNext(value)).toBe('/')
+    for (const value of ['/.//evil.test', '/..//evil.test'])
+      expect(sanitizeNext(value)).toBe('/evil.test')
     expect(
       authSchema.parse({
         email: 'u@example.com',
