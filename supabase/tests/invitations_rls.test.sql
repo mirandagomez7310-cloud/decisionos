@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(48);
+select plan(50);
 insert into auth.users(id, email) values
 ('00000000-0000-0000-0000-000000000001','user1@test.invalid'),
 ('00000000-0000-0000-0000-000000000002','user2@test.invalid'),
@@ -36,8 +36,10 @@ select results_eq($$delete from public.invitations where email='new@test.invalid
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000002","email":"user2@test.invalid","role":"authenticated"}';
 select results_eq($$select count(*) from public.invitations$$, array[1::bigint], 'rol 2: visibilidad invitaciones');
-select results_eq($$insert into public.invitations(organization_id,email,role,token_hash,created_by) values ('10000000-0000-0000-0000-000000000001','new@test.invalid','viewer',repeat('c',64),'00000000-0000-0000-0000-000000000001') returning role::text$$, array['viewer'::text], 'gestor invita');
+select throws_ok($$insert into public.invitations(organization_id,email,role,token_hash,created_by) values ('10000000-0000-0000-0000-000000000001','spoof@test.invalid','viewer',repeat('e',64),'00000000-0000-0000-0000-000000000001')$$, '42501', null::text, 'no suplanta created_by');
+select results_eq($$insert into public.invitations(organization_id,email,role,token_hash,created_by) values ('10000000-0000-0000-0000-000000000001','new@test.invalid','viewer',repeat('c',64),'00000000-0000-0000-0000-000000000002') returning role::text$$, array['viewer'::text], 'gestor invita');
 select results_eq($$update public.invitations set role='analyst' where email='new@test.invalid' returning role::text$$, array['analyst'::text], 'gestor actualiza invitación');
+select throws_ok($$update public.invitations set expires_at = now() + interval '1 day' where email='new@test.invalid'$$, '42501', null::text, 'cliente no alarga caducidad');
 select results_eq($$delete from public.invitations where email='new@test.invalid' returning email$$, array['new@test.invalid'::text], 'gestor borra invitación');
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000003","email":"user3@test.invalid","role":"authenticated"}';

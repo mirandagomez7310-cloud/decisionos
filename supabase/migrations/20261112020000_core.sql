@@ -30,7 +30,8 @@ create table public.invitations (
   expires_at timestamptz not null default pg_catalog.now() + interval '7 days',
   accepted_at timestamptz,
   created_by uuid not null references auth.users(id),
-  created_at timestamptz not null default pg_catalog.now()
+  created_at timestamptz not null default pg_catalog.now(),
+  check (expires_at <= created_at + interval '30 days')
 );
 create unique index invitations_pending_email_idx on public.invitations(organization_id, pg_catalog.lower(email)) where accepted_at is null;
 create index invitations_organization_id_expires_at_idx on public.invitations(organization_id, expires_at);
@@ -89,7 +90,10 @@ begin
   where i.token_hash = pg_catalog.encode(pg_catalog.sha256(pg_catalog.convert_to(token, 'UTF8')), 'hex')
   for update;
   if not found or invitation.expires_at <= pg_catalog.now() or invitation.accepted_at is not null
-    or pg_catalog.lower(invitation.email) is distinct from pg_catalog.lower(auth.jwt() ->> 'email') then
+    or pg_catalog.lower(invitation.email) is distinct from pg_catalog.lower(auth.jwt() ->> 'email')
+    -- Quien invitó debe seguir teniendo rango para ese rol; si lo perdió, la invitación muere con él.
+    or not exists (select 1 from public.memberships m where m.organization_id = invitation.organization_id
+      and m.user_id = invitation.created_by and (m.role = 'owner' or (m.role = 'admin' and invitation.role <> 'owner'))) then
     raise exception 'Invalid invitation' using errcode = '42501';
   end if;
   -- El orden del enum va de mayor a menor privilegio; aceptar nunca degrada.
@@ -198,6 +202,7 @@ create policy invitations_select on public.invitations for select to authenticat
 using (organization_id in (select public.my_org_ids_with_role('{owner,admin}')));
 create policy invitations_insert on public.invitations for insert to authenticated
 with check (organization_id in (select public.my_org_ids_with_role('{owner,admin}'))
+  and created_by = (select auth.uid())
   and (role <> 'owner' or organization_id in (select public.my_org_ids_with_role('{owner}'))));
 create policy invitations_update on public.invitations for update to authenticated
 using (organization_id in (select public.my_org_ids_with_role('{owner,admin}'))
@@ -226,7 +231,8 @@ revoke update, delete on public.audit_log from authenticated, anon;
 
 -- Las identidades de membresía son inmutables para evitar traslados entre tenants.
 grant update(role) on public.memberships to authenticated;
-grant update(email, role, token_hash, expires_at) on public.invitations to authenticated;
+-- Token y caducidad no se cambian desde el cliente: se borra y se crea otra invitación.
+grant update(role) on public.invitations to authenticated;
 grant update(name, slug, country, currency, timezone, settings) on public.organizations to authenticated;
 
 revoke all on function public.my_org_ids(), public.my_org_ids_with_role(public.org_role[]),
