@@ -224,7 +224,10 @@ with check (organization_id in (select public.my_org_ids())
 revoke all on public.organizations, public.memberships, public.invitations, public.audit_log from public, anon, authenticated;
 revoke all on sequence public.audit_log_id_seq from public, anon, authenticated;
 grant select, delete on public.organizations to authenticated;
-grant select, insert, delete on public.memberships, public.invitations to authenticated;
+grant select, insert, delete on public.memberships to authenticated;
+-- Sin id, created_at ni accepted_at: el tope de caducidad se calcula sobre un created_at que fija el servidor.
+grant select, delete on public.invitations to authenticated;
+grant insert(organization_id, email, role, token_hash, expires_at, created_by) on public.invitations to authenticated;
 grant select, insert on public.audit_log to authenticated;
 grant usage on sequence public.audit_log_id_seq to authenticated;
 revoke update, delete on public.audit_log from authenticated, anon;
