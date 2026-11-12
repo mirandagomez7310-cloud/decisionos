@@ -211,7 +211,10 @@ using (organization_id in (select public.my_org_ids_with_role('{owner,admin}'))
 create policy audit_log_select on public.audit_log for select to authenticated
 using (organization_id in (select public.my_org_ids_with_role('{owner,admin}')));
 create policy audit_log_insert on public.audit_log for insert to authenticated
-with check (organization_id in (select public.my_org_ids()));
+with check (organization_id in (select public.my_org_ids())
+  -- El actor no se puede suplantar y los eventos de triggers y RPC no se pueden falsificar desde el cliente.
+  and actor_user_id = (select auth.uid()) and actor_kind = 'user'
+  and action not like 'membership.%' and action not like 'organization.%' and action not like 'invitation.%');
 
 revoke all on public.organizations, public.memberships, public.invitations, public.audit_log from public, anon, authenticated;
 revoke all on sequence public.audit_log_id_seq from public, anon, authenticated;

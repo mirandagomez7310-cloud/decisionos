@@ -1,0 +1,34 @@
+name: ci
+on: { push: { branches: [master] }, pull_request: {} }
+concurrency: { group: 'ci-${{ github.ref }}', cancel-in-progress: true }
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version-file: .nvmrc, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+  db:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version-file: .nvmrc, cache: npm }
+      - run: npm ci
+      - uses: supabase/setup-cli@v3
+        with: { version: latest }
+      - run: supabase start
+      # Verificar en el primer run con `supabase status -o env` que CLI 3.x conserva API_URL, PUBLISHABLE_KEY y SECRET_KEY.
+      - run: |
+          supabase status -o env | sed 's/"//g' > .sb.env
+          . ./.sb.env
+          echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_SECRET_KEY=$SECRET_KEY" >> "$GITHUB_ENV"
+      - run: npm run test:db
+      - run: npm run build

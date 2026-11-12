@@ -37,6 +37,12 @@ Ejecuta `npm.cmd run <script>`:
 
 La inicialización de Supabase se ejecuta con `npx.cmd supabase init`; no se configura un editor. Las operaciones de base de datos requieren completar esa inicialización y disponer de Docker. La configuración de Playwright reserva un proyecto `setup` del que dependen Desktop Chrome y Pixel 7.
 
+## CI
+
+Cada push a `master` y cada PR ejecutan typecheck, lint, tests unitarios, pgTAP y build.
+Los resultados se consultan en la pestaña Actions de GitHub y en las comprobaciones del PR.
+pgTAP solo corre en CI; ninguna migración se da por válida hasta que pase en verde.
+
 ## Despliegue
 
-Vercel, pendiente de un corte posterior. Este scaffold no configura CI ni recursos remotos.
+Vercel, pendiente de un corte posterior. Este scaffold no configura recursos remotos.
