@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from '@/lib/zod'
 import { roleSchema } from '@/features/members/schemas'
 export const invitationSchema = z.object({
   organizationId: z.uuid(),

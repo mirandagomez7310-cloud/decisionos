@@ -117,7 +117,7 @@ decisionos/
 
 ## 9. Entorno verificado (2026-11-11)
 
-- Node 24.19.0, npm 11.17.0, git 2.55. Sin pnpm (se usa npm). **Sin Docker ni psql**: `supabase start`, `supabase test db` y los E2E con base de datos no corren en local; los ejecuta el CI (la plantilla lo tiene verificado) o se usa un proyecto Supabase remoto de desarrollo.
+- Node 24.19.0, npm 11.17.0, git 2.55. Sin pnpm (se usa npm). Docker Desktop 29 desde 2026-11-12: `supabase start`, `supabase test db`, E2E y Lighthouse corren en local además de en CI.
 - `create-next-app` 16.4.6 acepta una carpeta destino que ya contenga `docs/`, `.git`, `.gitignore`, `.claude/` o `LICENSE`, pero **no** `CLAUDE.md` ni `README.md`. Antes del scaffold hay que apartar `CLAUDE.md` y devolverlo después.
 - Supabase y Context7 aparecen en esta sesión solo con herramientas de autenticación: no se ha comprobado que estén conectados.
 
@@ -125,7 +125,7 @@ decisionos/
 
 | Riesgo | Impacto | Mitigación |
 |---|---|---|
-| Sin Docker en local | La frontera de aislamiento (RLS) solo se prueba en CI | Repo en GitHub desde la fase 1; PR obligatorio; no dar por válida una migración sin `test:db` en verde |
+| Migración sin probar | La frontera de aislamiento (RLS) solo se garantiza con pgTAP | PR obligatorio con CI; no dar por válida una migración sin `test:db` en verde (local o CI) |
 | Calidad de los datos de origen (SKU inconsistentes, clientes duplicados, costos ausentes) | Métricas incorrectas con apariencia de precisión | Staging con errores por fila, reglas de normalización explícitas, métricas que declaran cobertura ("calculado sobre el 83 % de las líneas con costo") |
 | Tiempo máximo de función en Vercel para importaciones grandes | Jobs cortados a mitad | Procesar por lotes idempotentes con `jobs.progress`; medir con archivos reales antes de la fase 2 |
 | Coste de RLS por fila en agregaciones sobre `sale_lines` | Dashboards lentos al crecer los datos | Políticas con `in (select my_org_ids())`, nunca función con la columna como argumento; `EXPLAIN (ANALYZE)` sobre cada vista en la fase 2 con datos reales |

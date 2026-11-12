@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from '@/lib/zod'
 export function sanitizeNext(value: unknown): string {
   if (
     typeof value !== 'string' ||

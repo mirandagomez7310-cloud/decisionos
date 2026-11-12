@@ -1,5 +1,5 @@
 import 'server-only'
-import { z } from 'zod'
+import { z } from '@/lib/zod'
 
 export const clientEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
