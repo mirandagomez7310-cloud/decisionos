@@ -23,7 +23,7 @@ jobs:
       - uses: supabase/setup-cli@v3
         with: { version: latest }
       - run: supabase start
-      # Verificar en el primer run con `supabase status -o env` que CLI 3.x conserva API_URL, PUBLISHABLE_KEY y SECRET_KEY.
+      # Verificado en el primer run (CLI 3.x, 2026-11-12): API_URL, PUBLISHABLE_KEY y SECRET_KEY.
       - run: |
           supabase status -o env | sed 's/"//g' > .sb.env
           . ./.sb.env

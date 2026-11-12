@@ -1,6 +1,6 @@
 # DecisionOS — Modelo de datos inicial
 
-Estado: `0001_core` escrita (pendiente de CI). Las tablas se crean fase a fase (`ROADMAP.md`); este documento se actualiza con cada migración. Postgres 17 en Supabase, esquema `public`.
+Estado: `0001_core` validada en CI (pgTAP: 4 suites, 155 aserciones, 2026-11-12). Las tablas se crean fase a fase (`ROADMAP.md`); este documento se actualiza con cada migración. Postgres 17 en Supabase, esquema `public`.
 
 ## Convenciones
 

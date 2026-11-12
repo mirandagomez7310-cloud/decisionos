@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import './globals.css'
+import { Providers } from './providers'
 import { Geist } from 'next/font/google'
 import { cn } from '@/lib/utils'
 
@@ -25,7 +26,7 @@ export default async function RootLayout({
         </a>
         <header className="border-b p-6">DecisionOS</header>
         <main id="main-content" tabIndex={-1} className="mx-auto max-w-5xl p-6">
-          {children}
+          <Providers>{children}</Providers>
         </main>
       </body>
     </html>

@@ -21,3 +21,5 @@ export const env = {
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
   }),
 }
+
+export const isDevelopment = process.env.NODE_ENV === 'development'
