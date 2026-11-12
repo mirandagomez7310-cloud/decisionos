@@ -4,6 +4,7 @@ Brief para Codex. Lo decide y revisa Claude Code; Codex ejecuta. Contexto del pr
 
 ## Entorno y límites (obligatorio)
 - Shell: PowerShell 5.1. Usa `npm.cmd` y `npx.cmd` (nunca `npm`/`npx`: la política bloquea `npm.ps1`). Separa comandos con `;` o en llamadas distintas; `&&` no existe.
+- **Cachés fuera del repo y fuera de `AppData`** (el sandbox solo escribe en el workspace y en `TEMP`; `create-next-app .` rechaza carpetas extra en el destino): al empezar cada sesión de shell ejecuta `$env:npm_config_cache = (Join-Path $env:TEMP 'decisionos-npm-cache')` y `$env:PLAYWRIGHT_BROWSERS_PATH = (Join-Path $env:TEMP 'decisionos-playwright')`. Registra `PLAYWRIGHT_BROWSERS_PATH` también en `.env.example` como comentario para que quien lance E2E en local lo sepa.
 - **Nada de git que escriba** (`add`, `commit`, `stash`, `checkout`, `mv`…): `.git` está protegido y los commits los hace Claude Code. `git status`/`git diff` sí.
 - No toques `docs/` salvo lo que diga este brief. `CLAUDE.md` y `.claude/` no están en la carpeta a propósito; no los crees.
 - Versiones: usa las que instale npm (`latest`). Si una mayor difiere de la citada aquí, lee su documentación instalada (`node_modules/<paquete>/`, y para Next `node_modules/next/dist/docs/`) antes de configurarla. Versiones de referencia (2026-10-30): next 16.4 · react 19.3 · @supabase/ssr 0.12 · supabase CLI 3.x · shadcn 4.23 · @tanstack/react-table 9.3 · react-hook-form 7.91 · @hookform/resolvers 6 · zod 4.6 · vitest 5 · @playwright/test 1.64 · oxlint 1.90 · @lhci/cli 0.15 · Node 24.
