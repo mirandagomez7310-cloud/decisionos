@@ -1,9 +1,3 @@
-'use client'
-import {
-  createColumnHelper,
-  tableFeatures,
-  useTable,
-} from '@tanstack/react-table'
 import {
   Table,
   TableHeader,
@@ -22,60 +16,37 @@ export type MemberRow = {
   organization_id: string
   owner: boolean
 }
-const features = tableFeatures({})
-const helper = createColumnHelper<typeof features, MemberRow>()
-const columns = helper.columns([
-  helper.accessor('email', { header: 'Correo' }),
-  helper.accessor('role', { header: 'Rol' }),
-  helper.accessor('created_at', {
-    header: 'Fecha de alta',
-    cell: ({ getValue }) =>
-      new Intl.DateTimeFormat('es-MX', {
-        timeZone: 'America/Mexico_City',
-      }).format(new Date(getValue())),
-  }),
-  helper.display({
-    id: 'actions',
-    header: 'Acciones',
-    cell: ({ row }) => (
-      <MemberControls
-        organizationId={row.original.organization_id}
-        userId={row.original.user_id}
-        email={row.original.email}
-        role={row.original.role}
-        owner={row.original.owner}
-      />
-    ),
-  }),
-])
+const dateFormat = new Intl.DateTimeFormat('es-MX', {
+  timeZone: 'America/Mexico_City',
+})
 export function MembersTable({ data }: { data: MemberRow[] }) {
-  const table = useTable({
-    data,
-    columns,
-    features,
-    getRowId: (row) => row.user_id,
-  })
   return (
     <Table>
       <TableHeader>
-        {table.getHeaderGroups().map((group) => (
-          <TableRow key={group.id}>
-            {group.headers.map((header) => (
-              <TableHead key={header.id}>
-                <table.FlexRender header={header} />
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
+        <TableRow>
+          <TableHead>Correo</TableHead>
+          <TableHead>Rol</TableHead>
+          <TableHead>Fecha de alta</TableHead>
+          <TableHead>Acciones</TableHead>
+        </TableRow>
       </TableHeader>
       <TableBody>
-        {table.getRowModel().rows.map((row) => (
-          <TableRow key={row.id}>
-            {row.getAllCells().map((cell) => (
-              <TableCell key={cell.id}>
-                <table.FlexRender cell={cell} />
-              </TableCell>
-            ))}
+        {data.map((member) => (
+          <TableRow key={member.user_id}>
+            <TableCell>{member.email}</TableCell>
+            <TableCell>{member.role}</TableCell>
+            <TableCell>
+              {dateFormat.format(new Date(member.created_at))}
+            </TableCell>
+            <TableCell>
+              <MemberControls
+                organizationId={member.organization_id}
+                userId={member.user_id}
+                email={member.email}
+                role={member.role}
+                owner={member.owner}
+              />
+            </TableCell>
           </TableRow>
         ))}
       </TableBody>
