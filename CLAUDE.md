@@ -14,7 +14,7 @@ Next.js 16 App Router · TypeScript strict · Supabase (Postgres + Auth + Storag
 `npm run dev | build | typecheck | lint | format | test | test:db | test:e2e | db:types | lhci`. En PowerShell 5.1, `npm.cmd`/`npx.cmd`. Con Docker Desktop: `npx supabase start`, `.env.local` con las claves de `supabase status -o env` (API_URL, PUBLISHABLE_KEY, SECRET_KEY) y exportadas en la shell para `test:e2e` y `lhci`; `test:e2e` necesita `build` previo (usa `next start`). Desde Git Bash, `npx playwright` falla por el espacio de `Program Files`: `node node_modules/@playwright/test/cli.js test`.
 
 ## Flujo de trabajo (D-023)
-Claude Code decide, escribe briefs en `docs/tasks/`, revisa y hace commits; Codex (sandbox `workspace-write`, red activada, cachés en `TEMP`) ejecuta cada brief. Codex no puede escribir en `.git` ni en `AppData`, y `create-next-app` o `supabase init` fallan en su sandbox: esos pasos los ejecuta Claude Code.
+Claude Code decide, escribe briefs en `docs/tasks/`, revisa, corre `powershell -NoProfile -File scripts/verify.ps1` (pila Supabase, pgTAP, build, E2E, Lighthouse) y hace commits y pushes; Codex (sandbox `workspace-write`, red activada, cachés en `TEMP`) ejecuta cada brief y deja `typecheck`, `lint`, `test` y `build` en verde. Codex no puede escribir en `.git` ni en `AppData`, ni usar Docker ni el CLI de Supabase (D-027): esos pasos los ejecuta Claude Code.
 
 ## Reglas propias del proyecto
 - Toda tabla nueva = migración + `organization_id` + RLS + políticas + test pgTAP con denegación cruzada entre organizaciones, en la misma migración.
