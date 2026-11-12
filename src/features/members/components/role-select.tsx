@@ -1,39 +1,26 @@
-'use client'
-import type { OrgRole } from '@/lib/supabase/types'
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select'
+﻿import type { ComponentProps } from 'react'
+
 export function RoleSelect({
-  value,
-  onChange,
   owner,
   label,
-  disabled,
-}: {
-  value: OrgRole
-  onChange: (role: OrgRole) => void
+  ...props
+}: ComponentProps<'select'> & {
   owner: boolean
   label: string
-  disabled?: boolean
 }) {
   return (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger aria-label={label}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {(['owner', 'admin', 'analyst', 'viewer'] as const)
-          .filter((role) => owner || role !== 'owner')
-          .map((role) => (
-            <SelectItem key={role} value={role}>
-              {role}
-            </SelectItem>
-          ))}
-      </SelectContent>
-    </Select>
+    <select
+      {...props}
+      aria-label={label}
+      className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+    >
+      {(['owner', 'admin', 'analyst', 'viewer'] as const)
+        .filter((role) => owner || role !== 'owner')
+        .map((role) => (
+          <option key={role} value={role}>
+            {role}
+          </option>
+        ))}
+    </select>
   )
 }

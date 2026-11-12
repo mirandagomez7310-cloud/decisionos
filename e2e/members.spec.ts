@@ -137,8 +137,7 @@ test.describe('miembros e invitaciones', () => {
       .filter({
         has: page.getByRole('cell', { name: email('analyst'), exact: true }),
       })
-    await row.getByRole('combobox').click()
-    await page.getByRole('option', { name: 'viewer', exact: true }).click()
+    await row.getByRole('combobox').selectOption('viewer')
     await row.getByRole('button', { name: 'Guardar rol', exact: true }).click()
     await expect(
       row.getByRole('alert').filter({ hasText: 'Cambio guardado' }),
@@ -148,8 +147,7 @@ test.describe('miembros e invitaciones', () => {
       .filter({
         has: page.getByRole('cell', { name: email('owner'), exact: true }),
       })
-    await ownerRow.getByRole('combobox').click()
-    await page.getByRole('option', { name: 'admin', exact: true }).click()
+    await ownerRow.getByRole('combobox').selectOption('admin')
     await ownerRow
       .getByRole('button', { name: 'Guardar rol', exact: true })
       .click()
@@ -189,11 +187,12 @@ test('admin no ve owner y la acción rechaza una solicitud manipulada', async ({
   page,
 }) => {
   await login(page, email('admin'), members)
-  await page.getByLabel('Rol de invitación', { exact: true }).click()
+  await page
+    .getByLabel('Rol de invitación', { exact: true })
+    .selectOption('viewer')
   await expect(
     page.getByRole('option', { name: 'owner', exact: true }),
   ).toHaveCount(0)
-  await page.getByRole('option', { name: 'viewer', exact: true }).click()
   await page.route('**/settings/members', async (route) => {
     const request = route.request()
     if (request.method() === 'POST' && request.headers()['next-action']) {

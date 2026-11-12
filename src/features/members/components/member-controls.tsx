@@ -1,18 +1,13 @@
-'use client'
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+﻿'use client'
+import { useActionState, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import type { OrgRole } from '@/lib/supabase/types'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-  DialogClose,
-} from '@/components/ui/dialog'
 import { changeMemberRole, removeMember } from '../actions'
 import { RoleSelect } from './role-select'
+
+const RemoveMemberDialog = dynamic(() => import('./remove-member-dialog'))
+
 export function MemberControls({
   organizationId,
   userId,
@@ -26,75 +21,61 @@ export function MemberControls({
   role: OrgRole
   owner: boolean
 }) {
-  const [selectedRole, setSelectedRole] = useState(role)
-  const [message, setMessage] = useState('')
   const [open, setOpen] = useState(false)
-  const {
-    handleSubmit,
-    formState: { isSubmitting },
-  } = useForm()
-  const removal = useForm()
-  async function run(remove: boolean) {
-    setMessage('')
-    try {
-      const result = await (remove
-        ? removeMember({ organizationId, userId })
-        : changeMemberRole({ organizationId, userId, role: selectedRole }))
-      setMessage(result.error ?? 'Cambio guardado.')
-      if (!result.error) setOpen(false)
-    } catch {
-      setMessage('No pudimos conectar. Inténtalo de nuevo.')
-    }
-  }
+  const trigger = useRef<HTMLButtonElement>(null)
+  const [message, action, pending] = useActionState(
+    async (_: string, data: FormData) => {
+      try {
+        const result = await (data.get('intent') === 'remove'
+          ? removeMember({ organizationId, userId })
+          : changeMemberRole({
+              organizationId,
+              userId,
+              role: data.get('role'),
+            }))
+        if (!result.error) setOpen(false)
+        return result.error ?? 'Cambio guardado.'
+      } catch {
+        return 'No pudimos conectar. Inténtalo de nuevo.'
+      }
+    },
+    '',
+  )
   if (!owner && role === 'owner')
     return <span>Solo un propietario puede editar este miembro.</span>
   return (
     <div className="space-y-2">
-      <form
-        className="flex flex-wrap gap-2"
-        onSubmit={handleSubmit(() => run(false))}
-      >
+      <form className="flex flex-wrap gap-2" action={action}>
         <RoleSelect
-          value={selectedRole}
-          onChange={setSelectedRole}
+          name="role"
+          defaultValue={role}
           owner={owner}
           label={'Rol de ' + email}
-          disabled={isSubmitting || removal.formState.isSubmitting}
+          disabled={pending}
         />
-        <Button
-          disabled={isSubmitting || removal.formState.isSubmitting}
-          type="submit"
-        >
+        <Button disabled={pending} type="submit">
           Guardar rol
         </Button>
       </form>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button variant="destructive" disabled={isSubmitting}>
-            Quitar miembro
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogTitle>Quitar miembro</DialogTitle>
-          <DialogDescription>
-            Se quitará el acceso de {email} a esta organización.
-          </DialogDescription>
-          <form onSubmit={removal.handleSubmit(() => run(true))}>
-            <Button type="submit" disabled={removal.formState.isSubmitting}>
-              Confirmar baja
-            </Button>
-            <DialogClose asChild>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={removal.formState.isSubmitting}
-              >
-                Cancelar
-              </Button>
-            </DialogClose>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <Button
+        ref={trigger}
+        type="button"
+        variant="destructive"
+        disabled={pending}
+        onClick={() => setOpen(true)}
+      >
+        Quitar miembro
+      </Button>
+      {open && (
+        <RemoveMemberDialog
+          email={email}
+          action={action}
+          pending={pending}
+          message={message}
+          onOpenChange={setOpen}
+          onCloseAutoFocus={() => trigger.current?.focus()}
+        />
+      )}
       {message && <p role="alert">{message}</p>}
     </div>
   )
