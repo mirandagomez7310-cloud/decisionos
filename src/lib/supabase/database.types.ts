@@ -63,6 +63,52 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"import_rows": {
+                  Row: {
+                    "error": string | null,"id": number,"import_id": string,"organization_id": string,"raw": NonNullable<Json>,"row_number": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "error"?: string | null,"id"?: never,"import_id": string,"organization_id": string,"raw": NonNullable<Json>,"row_number": number
+                  }
+                  Update: {
+                    "error"?: string | null,"id"?: never,"import_id"?: string,"organization_id"?: string,"raw"?: NonNullable<Json>,"row_number"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "import_rows_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "import_rows_organization_id_import_id_fkey"
+      columns: ["organization_id","import_id"]
+isOneToOne: false
+      referencedRelation: "imports"
+      referencedColumns: ["organization_id","id"]
+    }
+                  ]
+                },"imports": {
+                  Row: {
+                    "column_mapping": NonNullable<Json>,"created_at": string,"created_by": string,"error_count": number,"finished_at": string | null,"id": string,"kind": string,"ok_count": number,"organization_id": string,"original_filename": string,"row_count": number,"status": string,"storage_path": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "column_mapping"?: NonNullable<Json>,"created_at"?: string,"created_by": string,"error_count"?: number,"finished_at"?: string | null,"id"?: string,"kind": string,"ok_count"?: number,"organization_id": string,"original_filename": string,"row_count"?: number,"status"?: string,"storage_path": string
+                  }
+                  Update: {
+                    "column_mapping"?: NonNullable<Json>,"created_at"?: string,"created_by"?: string,"error_count"?: number,"finished_at"?: string | null,"id"?: string,"kind"?: string,"ok_count"?: number,"organization_id"?: string,"original_filename"?: string,"row_count"?: number,"status"?: string,"storage_path"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "imports_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"inventory_snapshots": {
                   Row: {
                     "organization_id": string,"product_id": string,"quantity": number,"snapshot_on": string,"source_import_id": string | null,"unit_cost": number | null
@@ -87,6 +133,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "products"
       referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "inventory_snapshots_source_import_fkey"
+      columns: ["organization_id","source_import_id"]
+isOneToOne: false
+      referencedRelation: "imports"
+      referencedColumns: ["organization_id","id"]
     }
                   ]
                 },"invitations": {
@@ -103,6 +155,26 @@ isOneToOne: false
                   Relationships: [
                     {
       foreignKeyName: "invitations_organization_id_fkey"
+      columns: ["organization_id"]
+isOneToOne: false
+      referencedRelation: "organizations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"jobs": {
+                  Row: {
+                    "attempts": number,"created_at": string,"finished_at": string | null,"id": string,"kind": string,"last_error": string | null,"locked_at": string | null,"locked_by": string | null,"max_attempts": number,"organization_id": string | null,"payload": NonNullable<Json>,"progress": NonNullable<Json>,"run_after": string,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attempts"?: number,"created_at"?: string,"finished_at"?: string | null,"id"?: string,"kind": string,"last_error"?: string | null,"locked_at"?: string | null,"locked_by"?: string | null,"max_attempts"?: number,"organization_id"?: string | null,"payload"?: NonNullable<Json>,"progress"?: NonNullable<Json>,"run_after"?: string,"status"?: string
+                  }
+                  Update: {
+                    "attempts"?: number,"created_at"?: string,"finished_at"?: string | null,"id"?: string,"kind"?: string,"last_error"?: string | null,"locked_at"?: string | null,"locked_by"?: string | null,"max_attempts"?: number,"organization_id"?: string | null,"payload"?: NonNullable<Json>,"progress"?: NonNullable<Json>,"run_after"?: string,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "jobs_organization_id_fkey"
       columns: ["organization_id"]
 isOneToOne: false
       referencedRelation: "organizations"
@@ -193,6 +265,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "sales"
       referencedColumns: ["organization_id","id"]
+    },{
+      foreignKeyName: "receivables_source_import_fkey"
+      columns: ["organization_id","source_import_id"]
+isOneToOne: false
+      referencedRelation: "imports"
+      referencedColumns: ["organization_id","id"]
     }
                   ]
                 },"sale_lines": {
@@ -251,6 +329,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "organizations"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "sales_source_import_fkey"
+      columns: ["organization_id","source_import_id"]
+isOneToOne: false
+      referencedRelation: "imports"
+      referencedColumns: ["organization_id","id"]
     }
                   ]
                 }
@@ -262,6 +346,52 @@ isOneToOne: false
             "accept_invitation":
 { Args: { "token": string }; Returns: string
                            },
+"claim_job":
+{ Args: { "kinds": (string)[],"worker": string }; Returns: {
+              "attempts": number,
+"created_at": string,
+"finished_at": string | null,
+"id": string,
+"kind": string,
+"last_error": string | null,
+"locked_at": string | null,
+"locked_by": string | null,
+"max_attempts": number,
+"organization_id": string | null,
+"payload": NonNullable<Json>,
+"progress": NonNullable<Json>,
+"run_after": string,
+"status": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "jobs"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"complete_job":
+{ Args: { "id": string,"last_error": string,"status": string }; Returns: {
+              "attempts": number,
+"created_at": string,
+"finished_at": string | null,
+"id": string,
+"kind": string,
+"last_error": string | null,
+"locked_at": string | null,
+"locked_by": string | null,
+"max_attempts": number,
+"organization_id": string | null,
+"payload": NonNullable<Json>,
+"progress": NonNullable<Json>,
+"run_after": string,
+"status": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "jobs"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "create_organization":
 { Args: { "name": string,"slug": string }; Returns: {
               "country": string,

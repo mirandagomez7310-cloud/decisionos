@@ -1,6 +1,6 @@
 # DecisionOS — Modelo de datos inicial
 
-Estado: `0002_business` escrita (pendiente de verificación). `0001_core` validada en CI (pgTAP: 4 suites, 155 aserciones, 2026-11-12). Las tablas se crean fase a fase (`ROADMAP.md`); este documento se actualiza con cada migración. Postgres 17 en Supabase, esquema `public`.
+Estado: `0003_imports_jobs` escrita (pendiente de verificación). `0002_business` escrita (pendiente de verificación). `0001_core` validada en CI (pgTAP: 4 suites, 155 aserciones, 2026-11-12). Las tablas se crean fase a fase (`ROADMAP.md`); este documento se actualiza con cada migración. Postgres 17 en Supabase, esquema `public`.
 
 ## Convenciones
 
@@ -19,7 +19,7 @@ Estado: `0002_business` escrita (pendiente de verificación). `0001_core` valida
 |---|---|---|---|---|
 | Ver dashboards, módulos, insights, reports | ✔ | ✔ | ✔ | ✔ |
 | Marcar insights (visto, descartado, hecho) | | ✔ | ✔ | ✔ |
-| Importar y revertir importaciones | | ✔ | ✔ | ✔ |
+| Importar y revertir importaciones | | | ✔ | ✔ |
 | Editar productos y clientes (catálogo) | | ✔ | ✔ | ✔ |
 | Gestionar miembros e invitaciones, ajustes, ver `audit_log` | | | ✔ | ✔ |
 | Facturación, borrar organización, transferir propiedad | | | | ✔ |
@@ -59,7 +59,7 @@ grant select on public.products to authenticated;
 
 **Vistas.** Una vista normal se ejecuta con los permisos de su propietario y **salta las políticas de las tablas**. Toda vista de métricas se crea `with (security_invoker = true)` para que apliquen las políticas del usuario que consulta. Las vistas materializadas no admiten RLS ni `security_invoker`: si hace falta materializar, la vista vive en un esquema no expuesto por la API (`private`) y se lee a través de una función `security invoker` que filtra por `organization_id in (select public.my_org_ids())`.
 
-**Storage.** Un solo bucket privado `imports`; ruta `<organization_id>/<import_id>/<archivo>`. Políticas en `storage.objects` por el primer segmento de la ruta: lectura si `(storage.foldername(name))[1]::uuid in (select public.my_org_ids())`, escritura solo para `owner/admin/analyst` de esa organización. Subida y descarga desde el servidor con URL firmada de corta duración; tamaño máximo y tipo validados antes de firmar.
+**Storage.** Un solo bucket privado `imports`; ruta `<organization_id>/<import_id>/<archivo>`. Lectura e inserción solo para owner/admin: `bucket_id = 'imports'` y `(storage.foldername(name))[1] in (select id::text from public.my_org_ids_with_role('{owner,admin}') as id)`. Sin update/delete para authenticated; borrado por servicio. Límite 25 MiB y MIME CSV, XLSX, XLS y texto plano. Subida y descarga desde el servidor con URL firmada de corta duración; tamaño máximo y tipo validados antes de firmar.
 
 ## Tablas
 
@@ -85,7 +85,7 @@ Lectura: miembros de la misma organización. Escritura: owner/admin, **pero una 
 
 ### Datos de negocio (fase 2)
 
-Escritura exclusivamente por servicio (importaciones con `organization_id` explícito y auditoría); todos los roles de miembros solo leen mediante RLS. La edición de catálogo de la matriz usa ese camino de servicio. Todos los campos son obligatorios salvo los declarados nulos. Las FKs al tenant llevan `on delete cascade`; las referencias entre datos de negocio son compuestas, sin cascada. `source_import_id` queda sin FK hasta `0003_imports_jobs`. Solo `products`, `customers` y `receivables` tienen trigger `set_updated_at`.
+Escritura exclusivamente por servicio (importaciones con `organization_id` explícito y auditoría); todos los roles de miembros solo leen mediante RLS. La edición de catálogo de la matriz usa ese camino de servicio. Todos los campos son obligatorios salvo los declarados nulos. Las FKs al tenant llevan `on delete cascade`; las referencias entre datos de negocio son compuestas, sin cascada. `source_import_id` tiene FK compuesta a `imports(organization_id, id)` desde `0003_imports_jobs`. Solo `products`, `customers` y `receivables` tienen trigger `set_updated_at`.
 
 **products**
 `id` · `organization_id` · `sku text` · `name text` · `category text null` · `unit text null` · `standard_cost numeric(14,4) null` · `list_price numeric(14,4) null` · `active bool default true` · `created_at` · `updated_at`.
@@ -113,13 +113,19 @@ FKs compuestas a `sales` y `products`. Índices `(organization_id, product_id)` 
 ### Importación y trabajos (fase 2)
 
 **imports**
+Lectura: cualquier miembro. Inserción: owner/admin, `created_by = auth.uid()` y estado inicial `pending`; grant solo sobre `organization_id, kind, storage_path, original_filename, column_mapping, created_by`. Sin update/delete para authenticated. `unique (organization_id, id)`; ruta obligatoriamente bajo `organization_id/`. `column_mapping` por defecto `{}`; contadores no negativos por defecto 0. `created_by` referencia `auth.users`.
 `id` · `organization_id` · `kind text check in ('sales','products','customers','inventory','receivables')` · `storage_path text` (bucket privado `imports/<org>/…`) · `original_filename text` · `status text check in ('pending','processing','done','failed','reverted')` · `column_mapping jsonb` · `row_count int` · `ok_count int` · `error_count int` · `created_by uuid` · `created_at` · `finished_at null`.
 
 **import_rows** (staging)
+Lectura: owner/admin; escritura solo servicio. FK compuesta a imports; índice `(import_id, row_number)` y número de fila positivo.
 `id bigint identity` · `import_id` · `organization_id` · `row_number int` · `raw jsonb` · `error text null`. Se consulta para mostrar errores por fila; se borra al revertir.
 
 **jobs**
 `id` · `organization_id uuid null` (null = sistema) · `kind text` · `payload jsonb` · `status text check in ('queued','running','done','failed')` · `attempts int default 0` · `max_attempts int default 3` · `run_after timestamptz default now()` · `locked_at null` · `locked_by text null` · `progress jsonb` · `last_error text null` · `created_at` · `finished_at null`.
+`kind` limitado a `import` y `revert_import`; `payload` y `progress` por defecto `{}`, estado inicial `queued`, intentos no negativos y máximo positivo. Sin trigger `updated_at`.
+
+`claim_job(worker text, kinds text[])`: solo service_role, security definer con search_path vacío. Reclama un queued vencido del tipo solicitado con intentos restantes mediante `FOR UPDATE SKIP LOCKED`, lo marca running, incrementa attempts y fija bloqueo; devuelve null si no hay. `complete_job(id uuid, status text, last_error text)`: mismos permisos, acepta done/failed sobre un running, limpia bloqueo y fija finished_at al terminar. Failed con intentos restantes vuelve a queued, sin finished_at, con espera de un minuto por intento.
+
 Índice parcial `(run_after) where status = 'queued'`. Solo la clave de servicio escribe; los miembros leen los de su organización (progreso de importación).
 
 ### Inteligencia (fase 5)
