@@ -12,10 +12,10 @@ insert into public.imports(id, organization_id, kind, storage_path, original_fil
   ('00000700-0000-0000-0000-000000000001', '00000100-0000-0000-0000-000000000001', 'sales', '00000100-0000-0000-0000-000000000001/00000700-0000-0000-0000-000000000001-a.csv', 'a.csv', '00000001-0000-0000-0000-000000000001'),
   ('00000701-0000-0000-0000-000000000001', '00000100-0000-0000-0000-000000000001', 'sales', '00000100-0000-0000-0000-000000000001/00000701-0000-0000-0000-000000000001-b.csv', 'b.csv', '00000001-0000-0000-0000-000000000001');
 
-select is((select preview from public.imports limit 1), '[]'::jsonb, 'preview vacío por defecto');
-select throws_ok($$update public.imports set storage_path = '00000100-0000-0000-0000-000000000001/../00000101-0000-0000-0000-000000000001/x.csv'$$, '23514', null::text, 'rechaza traversal');
-select throws_ok($$update public.imports set storage_path = '00000100-0000-0000-0000-000000000001/sub/x.csv'$$, '23514', null::text, 'rechaza subcarpetas');
-select lives_ok($$update public.imports set storage_path = '00000100-0000-0000-0000-000000000001/00000700-0000-0000-0000-000000000001-x.csv'$$, 'acepta UUID y nombre');
+select is((select preview from public.imports where id = '00000700-0000-0000-0000-000000000001'), '[]'::jsonb, 'preview vacío por defecto');
+select throws_ok($$update public.imports set storage_path = '00000100-0000-0000-0000-000000000001/../00000101-0000-0000-0000-000000000001/x.csv' where id = '00000700-0000-0000-0000-000000000001'$$, '23514', null::text, 'rechaza traversal');
+select throws_ok($$update public.imports set storage_path = '00000100-0000-0000-0000-000000000001/sub/x.csv' where id = '00000700-0000-0000-0000-000000000001'$$, '23514', null::text, 'rechaza subcarpetas');
+select lives_ok($$update public.imports set storage_path = '00000100-0000-0000-0000-000000000001/00000700-0000-0000-0000-000000000001-x.csv' where id = '00000700-0000-0000-0000-000000000001'$$, 'acepta UUID y nombre');
 
 set local role authenticated;
 select throws_ok($$select public.apply_import_sales('00000100-0000-0000-0000-000000000001', '00000700-0000-0000-0000-000000000001', '[]')$$, '42501', null::text, 'authenticated: no ejecuta ventas');

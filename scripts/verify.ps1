@@ -12,6 +12,8 @@ $env:NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = $env:PUBLISHABLE_KEY
 $env:SUPABASE_SECRET_KEY = $env:SECRET_KEY
 $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:TEMP 'decisionos-playwright'
 if (-not $env:JOBS_SECRET) { $env:JOBS_SECRET = 'local-jobs-secret-decisionos-2026' }
+# Base limpia como en CI: los datos del E2E anterior rompen las aserciones de tabla completa.
+npx.cmd supabase db reset 2>&1 | Out-Null
 $results = @()
 foreach ($step in 'test:db', 'build', 'test:e2e', 'lhci') {
   $out = npm.cmd run $step 2>&1

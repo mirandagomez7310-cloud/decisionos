@@ -1,6 +1,8 @@
 import 'server-only'
 import Papa from 'papaparse'
-import { readSheet } from 'read-excel-file/node'
+// La versión universal descomprime con fflate desde el directorio central y reserva el tamaño
+// declarado, el mismo que acota zipUncompressedSize; la de Node lee las cabeceras locales.
+import { readSheet } from 'read-excel-file/universal'
 import { normalizeHeader } from './mapping'
 import { zipUncompressedSize } from './zip'
 
@@ -30,7 +32,7 @@ export async function parseFile(
   let rows: Record<string, string>[]
   if (extension === 'xlsx') {
     zipUncompressedSize(buffer)
-    const data = await readSheet(buffer, {
+    const data = await readSheet(new Uint8Array(buffer).buffer, {
       trim: false,
       parseNumber: (value) => value,
     })
