@@ -160,3 +160,7 @@ Vistas `with (security_invoker = true)` (ver "Vistas" arriba: sin esa opción no
 3. `0003_imports_jobs`: `imports`, `import_rows`, `jobs`, bucket privado `imports` con sus políticas en `storage.objects` y test cruzado.
 4. `0004_metrics_views`: vistas de métricas.
 5. `0005_insights`: `insight_kind`, `insights`. (`alert_deliveries` y `alert_rules` se diseñan en la fase 5, en una migración propia.)
+
+## Reversión de importaciones
+
+La reversión elimina ventas y líneas, inventarios y cuentas por cobrar de source_import_id, además del staging. Productos y clientes se conservan: no tienen source_import_id. Las cuentas de otras importaciones conservan sus saldos y pierden solo la referencia a la venta eliminada.

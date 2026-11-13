@@ -83,7 +83,7 @@ export default async function ImportPage({
         </>
       )}
       {canEdit && item.status === 'done' && (
-        <ActionForm action={revertImport} label="Revertir">
+        <ActionForm action={revertImport} label="Revertir (conserva productos y clientes)">
           <input type="hidden" name="organizationId" value={organization.id} />
           <input type="hidden" name="importId" value={id} />
         </ActionForm>
