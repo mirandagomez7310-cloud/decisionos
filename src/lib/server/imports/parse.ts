@@ -2,6 +2,7 @@ import 'server-only'
 import Papa from 'papaparse'
 import { readSheet } from 'read-excel-file/node'
 import { normalizeHeader } from './mapping'
+import { zipUncompressedSize } from './zip'
 
 function checkHeaders(headers: string[]) {
   if (!headers.length || headers.some((header) => !header.trim()))
@@ -28,6 +29,7 @@ export async function parseFile(
   let headers: string[]
   let rows: Record<string, string>[]
   if (extension === 'xlsx') {
+    zipUncompressedSize(buffer)
     const data = await readSheet(buffer, {
       trim: false,
       parseNumber: (value) => value,
