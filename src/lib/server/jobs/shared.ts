@@ -30,9 +30,10 @@ export async function checked<T>(
   if (error) throw new Error(error.message)
   return data
 }
-export function batches<T>(rows: T[]): T[][] {
+export function batches<T>(rows: T[], size = 500): T[][] {
   const result: T[][] = []
-  for (let i = 0; i < rows.length; i += 500) result.push(rows.slice(i, i + 500))
+  for (let i = 0; i < rows.length; i += size)
+    result.push(rows.slice(i, i + size))
   return result
 }
 export function importId(job: Job): string {
@@ -49,14 +50,12 @@ export function importId(job: Job): string {
 }
 export async function audit(db: Client, job: Job, action: string) {
   await checked(
-    db
-      .from('audit_log')
-      .insert({
-        organization_id: job.organization_id!,
-        actor_kind: 'system',
-        action,
-        entity: 'imports',
-        entity_id: importId(job),
-      }),
+    db.from('audit_log').insert({
+      organization_id: job.organization_id!,
+      actor_kind: 'system',
+      action,
+      entity: 'imports',
+      entity_id: importId(job),
+    }),
   )
 }

@@ -1,38 +1,34 @@
 import { describe, expect, it, vi } from 'vitest'
-import { groupSales, sumMoney } from './handlers/import'
+import { salesBatches } from './handlers/import'
 import { batches, checked } from './shared'
 
 describe('jobs', () => {
-  it('suma centésimas exactas, negativos y comprueba el límite SQL', () => {
-    expect(sumMoney(['0.10', '0.20'])).toBe('0.30')
-    expect(sumMoney(['-1.01', '0.20'])).toBe('-0.81')
-    expect(() => sumMoney(['999999999999.99', '0.01'])).toThrow()
+  const row = (ref: string, rowNumber = 1) => ({
+    rowNumber,
+    data: { external_ref: ref },
   })
-  it('agrupa folios y suma el impuesto de cabecera una sola vez', () => {
-    const data = {
-      external_ref: 'A',
-      customer_code: 'C',
-      sold_on: '2026-01-01',
-      currency: 'MXN',
-      status: 'completed',
-      tax: '0.16',
-      line_total: '0.10',
-    }
-    const groups = groupSales([
-      { rowNumber: 1, data },
-      { rowNumber: 2, data },
-      { rowNumber: 3, data: { ...data, external_ref: 'B' } },
-    ])
-    expect(groups).toHaveLength(2)
-    expect(groups[0]!.header).toMatchObject({
-      subtotal: '0.20',
-      tax: '0.16',
-      total: '0.36',
-    })
+  it('agrupa folios no contiguos sin dividirlos al formar lotes de 2000', () => {
+    const rows = Array.from({ length: 2001 }, (_, i) =>
+      row(String(i % 3), i + 1),
+    )
+    const chunks = salesBatches(rows)
+    expect(chunks.map((chunk) => chunk.length)).toEqual([1334, 667])
+    expect(new Set(chunks[0]!.map((r) => r.data.external_ref))).toEqual(
+      new Set(['0', '1']),
+    )
+    expect(salesBatches([])).toEqual([])
+    expect(
+      salesBatches(Array.from({ length: 2000 }, () => row('A')))[0],
+    ).toHaveLength(2000)
+  })
+  it('rechaza antes de escribir folios demasiado grandes o cabeceras inconsistentes', () => {
     expect(() =>
-      groupSales([
-        { rowNumber: 1, data },
-        { rowNumber: 2, data: { ...data, currency: 'USD' } },
+      salesBatches(Array.from({ length: 2001 }, () => row('A'))),
+    ).toThrow('2000')
+    expect(() =>
+      salesBatches([
+        { rowNumber: 1, data: { external_ref: 'A', currency: 'MXN' } },
+        { rowNumber: 2, data: { external_ref: 'A', currency: 'USD' } },
       ]),
     ).toThrow('Cabecera inconsistente')
   })

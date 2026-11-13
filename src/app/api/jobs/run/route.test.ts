@@ -1,20 +1,31 @@
-import { expect, it, vi } from 'vitest'
+import { beforeEach, expect, it, vi } from 'vitest'
+const run = vi.hoisted(() => vi.fn())
+vi.mock('@/env', () => ({ env: { JOBS_SECRET: 'secret-é' } }))
+vi.mock('@/lib/server/jobs', () => ({ runPendingJobs: run }))
 import { POST } from './route'
-import { runPendingJobs } from '@/lib/server/jobs'
-vi.mock('@/lib/server/jobs', () => ({ runPendingJobs: vi.fn() }))
-it('rechaza solicitudes sin secreto y ejecuta las autorizadas', async () => {
-  const denied = await POST(
-    new Request('https://example.com/api/jobs/run', { method: 'POST' }),
-  )
-  expect(denied.status).toBe(401)
-  expect(await denied.text()).toBe('')
-  expect(runPendingJobs).not.toHaveBeenCalled()
-  const allowed = await POST(
-    new Request('https://example.com/api/jobs/run', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer jobs_test_secret' },
-    }),
-  )
-  expect(allowed.status).toBe(204)
-  expect(runPendingJobs).toHaveBeenCalledOnce()
+
+beforeEach(() => vi.clearAllMocks())
+it.each([null, '', 'Bearer bad', 'Bearer secret-xx', 'Bearer secret-à'])(
+  'deniega credencial inválida %s sin ejecutar jobs',
+  async (authorization) => {
+    const response = await POST(
+      new Request('http://localhost/api/jobs/run', {
+        headers: authorization === null ? {} : { authorization },
+      }),
+    )
+    expect(response.status).toBe(401)
+    expect(run).not.toHaveBeenCalled()
+  },
+)
+it('acepta la credencial exacta', async () => {
+  expect(
+    (
+      await POST(
+        new Request('http://localhost/api/jobs/run', {
+          headers: { authorization: 'Bearer secret-é' },
+        }),
+      )
+    ).status,
+  ).toBe(204)
+  expect(run).toHaveBeenCalledOnce()
 })

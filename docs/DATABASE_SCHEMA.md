@@ -59,7 +59,7 @@ grant select on public.products to authenticated;
 
 **Vistas.** Una vista normal se ejecuta con los permisos de su propietario y **salta las políticas de las tablas**. Toda vista de métricas se crea `with (security_invoker = true)` para que apliquen las políticas del usuario que consulta. Las vistas materializadas no admiten RLS ni `security_invoker`: si hace falta materializar, la vista vive en un esquema no expuesto por la API (`private`) y se lee a través de una función `security invoker` que filtra por `organization_id in (select public.my_org_ids())`.
 
-**Storage.** Un solo bucket privado `imports`; ruta `<organization_id>/<import_id>/<archivo>`. Lectura e inserción solo para owner/admin: `bucket_id = 'imports'` y `(storage.foldername(name))[1] in (select id::text from public.my_org_ids_with_role('{owner,admin}') as id)`. Sin update/delete para authenticated; borrado por servicio. Límite 25 MiB y MIME CSV, XLSX, XLS y texto plano. Subida y descarga desde el servidor con URL firmada de corta duración; tamaño máximo y tipo validados antes de firmar.
+**Storage.** Un solo bucket privado `imports`; ruta `<organization_id>/<uuid>-<archivo>`, con nombre limitado a `[A-Za-z0-9._-]+` y sin subdirectorios. El `check` de `imports.storage_path` impide rutas con traversal. Lectura e inserción solo para owner/admin: `bucket_id = 'imports'` y `(storage.foldername(name))[1] in (select id::text from public.my_org_ids_with_role('{owner,admin}') as id)`. Sin update/delete para authenticated; borrado por servicio. Límite 25 MiB y MIME CSV, XLSX, XLS y texto plano. Subida y descarga para validar el mapeo mediante el cliente de usuario, aplicando las políticas de storage; el worker descarga con servicio.
 
 ## Tablas
 
@@ -114,7 +114,7 @@ FKs compuestas a `sales` y `products`. Índices `(organization_id, product_id)` 
 
 **imports**
 Lectura: cualquier miembro. Inserción: owner/admin, `created_by = auth.uid()` y estado inicial `pending`; grant solo sobre `organization_id, kind, storage_path, original_filename, column_mapping, created_by`. Sin update/delete para authenticated. `unique (organization_id, id)`; ruta obligatoriamente bajo `organization_id/`. `column_mapping` por defecto `{}`; contadores no negativos por defecto 0. `created_by` referencia `auth.users`.
-`id` · `organization_id` · `kind text check in ('sales','products','customers','inventory','receivables')` · `storage_path text` (bucket privado `imports/<org>/…`) · `original_filename text` · `status text check in ('pending','processing','done','failed','reverted')` · `column_mapping jsonb` · `row_count int` · `ok_count int` · `error_count int` · `created_by uuid` · `created_at` · `finished_at null`.
+`id` · `organization_id` · `kind text check in ('sales','products','customers','inventory','receivables')` · `storage_path text` (bucket privado; `^<org>/[0-9a-f-]{36}-[A-Za-z0-9._-]+$`) · `original_filename text` · `status text check in ('pending','processing','done','failed','reverted')` · `column_mapping jsonb` · `preview jsonb not null default '[]'` (primeras 20 filas válidas, `{rowNumber, data}`, guardadas al validar; el detalle no descarga el archivo) · `row_count int` · `ok_count int` · `error_count int` · `created_by uuid` · `created_at` · `finished_at null`.
 
 **import_rows** (staging)
 Lectura: owner/admin; escritura solo servicio. FK compuesta a imports; índice `(import_id, row_number)` y número de fila positivo.
@@ -127,6 +127,13 @@ Lectura: owner/admin; escritura solo servicio. FK compuesta a imports; índice `
 `claim_job(worker text, kinds text[])`: solo service_role, security definer con search_path vacío. Reclama un queued vencido del tipo solicitado con intentos restantes mediante `FOR UPDATE SKIP LOCKED`, lo marca running, incrementa attempts y fija bloqueo; devuelve null si no hay. `complete_job(id uuid, status text, last_error text)`: mismos permisos, acepta done/failed sobre un running, limpia bloqueo y fija finished_at al terminar. Failed con intentos restantes vuelve a queued, sin finished_at, con espera de un minuto por intento.
 
 Índice parcial `(run_after) where status = 'queued'`. Solo la clave de servicio escribe; los miembros leen los de su organización (progreso de importación).
+
+**RPC de importación (`20261113020000_imports_rpc.sql`).** Todas son `security definer`, fijan `search_path = ''` y solo permiten ejecución a `service_role`. Reciben `p_organization_id uuid` y `p_import_id uuid`; bloquean la importación y exigen que pertenezca a esa organización (`42501` en caso contrario).
+
+- `apply_import_sales(..., p_rows jsonb)` devuelve `(inserted_sales int, inserted_lines int, rejected jsonb)`: crea catálogos nuevos que traen nombre, agrupa cabeceras, calcula subtotal y total en SQL con `numeric`, hace upsert de ventas y reemplaza sus líneas dentro de una transacción. Rechaza cabeceras inconsistentes con `22023`.
+- `apply_import_products`, `apply_import_customers`, `apply_import_inventory` y `apply_import_receivables` reciben el mismo `p_rows` y devuelven `(inserted_<kind> int, rejected jsonb)`. Hacen upsert en conjunto; los catálogos conservan opcionales/active ausentes y las cuentas resuelven `sale_id` por `sale_external_ref` de la organización.
+- `rejected` contiene `{external_ref, row_number, motivo}` para referencias de catálogo inexistentes sin nombre. El worker registra esas filas en `import_rows`, envía hasta 2.000 filas por RPC y actualiza el progreso por lote. Los folios viajan completos; un folio con más de 2.000 líneas se detecta antes de aplicar ventas.
+- `revert_import(...) returns void` elimina líneas, ventas, inventarios, cuentas y errores del import, y lo marca `reverted`. Conserva productos/clientes y desvincula las cuentas de otros imports antes de borrar sus ventas asociadas.
 
 ### Inteligencia (fase 5)
 

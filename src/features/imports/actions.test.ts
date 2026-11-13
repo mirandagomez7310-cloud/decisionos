@@ -83,12 +83,17 @@ function authorize() {
       id: importId,
       kind: 'products',
       status: 'pending',
-      storage_path: organizationId + '/a.csv',
+      storage_path: organizationId + '/' + importId + '-a.csv',
       original_filename: 'a.csv',
     },
     error: null,
   })
+  const download = vi.fn().mockResolvedValue({
+    data: { arrayBuffer: async () => new ArrayBuffer(0) },
+    error: null,
+  })
   mocks.client.mockResolvedValue({
+    storage: { from: () => ({ download }) },
     from: (table: string) =>
       table === 'organizations'
         ? organization
@@ -96,7 +101,7 @@ function authorize() {
           ? item
           : audit,
   })
-  return { audit, item }
+  return { audit, item, download }
 }
 it('confirma con condición de estado y organización, audita y programa el worker', async () => {
   const { audit } = authorize()
@@ -195,7 +200,7 @@ it('rechaza cabeceras inventadas antes de escribir con servicio', async () => {
 })
 
 it('valida las filas y guarda solo errores con su raw y los contadores', async () => {
-  const { audit } = authorize()
+  const { audit, download } = authorize()
   const input = form()
   input.set('mapping.sku', 'Código')
   input.set('mapping.name', 'Nombre')
@@ -234,6 +239,7 @@ it('valida las filas y guarda solo errores con su raw y los contadores', async (
     }),
   ])
   expect(item.update).toHaveBeenLastCalledWith({
+    preview: [{ rowNumber: 1, data: { sku: 'A', name: 'Uno', active: true } }],
     row_count: 2,
     ok_count: 1,
     error_count: 1,
@@ -241,6 +247,48 @@ it('valida las filas y guarda solo errores con su raw y los contadores', async (
   expect(audit.insert).toHaveBeenCalledWith(
     expect.objectContaining({ action: 'imports.mapping_saved' }),
   )
+  expect(download).toHaveBeenCalledWith(
+    organizationId + '/' + importId + '-a.csv',
+  )
+})
+
+it('respeta una descarga denegada por storage del usuario sin escribir', async () => {
+  const { download } = authorize()
+  download.mockResolvedValue({ data: null, error: { message: 'denied' } })
+  const input = form()
+  input.set('mapping.sku', 'Código')
+  input.set('mapping.name', 'Nombre')
+  const from = vi.fn()
+  mocks.admin.mockReturnValue({ from })
+  expect(await saveMapping(input)).toEqual({
+    error: 'No pudimos descargar el archivo.',
+  })
+  expect(from).not.toHaveBeenCalled()
+  expect(mocks.parse).not.toHaveBeenCalled()
+})
+
+it('limita el preview guardado a las primeras 20 filas válidas', async () => {
+  authorize()
+  const input = form()
+  input.set('mapping.sku', 'Código')
+  input.set('mapping.name', 'Nombre')
+  const item = query({ data: { id: importId }, error: null })
+  mocks.admin.mockReturnValue({ from: () => item })
+  mocks.parse.mockResolvedValue({
+    headers: ['Código', 'Nombre'],
+    rows: [
+      { Código: '', Nombre: '' },
+      ...Array.from({ length: 21 }, (_, i) => ({
+        Código: String(i),
+        Nombre: 'Producto',
+      })),
+    ],
+  })
+  await saveMapping(input)
+  const preview = item.update.mock.lastCall![0].preview
+  expect(preview).toHaveLength(20)
+  expect(preview[0].rowNumber).toBe(2)
+  expect(preview[19].rowNumber).toBe(21)
 })
 
 it('sube con cliente de usuario y respeta el grant de imports al insertar', async () => {

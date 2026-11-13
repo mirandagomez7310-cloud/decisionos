@@ -70,6 +70,14 @@ describe('esquemas de importación', () => {
     )
     expect(sanitizeFilename('a'.repeat(300) + '.xlsx')).toHaveLength(180)
     expect(sanitizeFilename('a'.repeat(300) + '.xlsx')).toMatch(/\.xlsx$/)
+    for (const name of [
+      '../archivo con espacios.csv',
+      'ñ_日本.xlsx',
+      'a'.repeat(300) + '.xlsx',
+    ])
+      expect(
+        `${organizationId}/${organizationId}-${sanitizeFilename(name)}`,
+      ).toMatch(new RegExp(`^${organizationId}/[0-9a-f-]{36}-[A-Za-z0-9._-]+$`))
   })
   it('valida orden y paginación del catálogo', () => {
     expect(catalogSearchSchema.parse({})).toEqual({

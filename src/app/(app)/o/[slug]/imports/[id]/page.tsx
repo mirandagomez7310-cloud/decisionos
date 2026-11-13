@@ -18,7 +18,7 @@ export default async function ImportPage({
   const canEdit = role === 'owner' || role === 'admin'
   const preview =
     canEdit && item.ok_count > 0
-      ? await previewImport(db, item, organization.currency)
+      ? previewImport(item)
       : []
   const errors = []
   if (canEdit) {

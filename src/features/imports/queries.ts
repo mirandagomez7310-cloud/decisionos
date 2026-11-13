@@ -3,8 +3,8 @@ import { notFound } from 'next/navigation'
 import { requireRole } from '@/lib/server/auth'
 import { createClient } from '@/lib/supabase/server'
 import { parseFile } from '@/lib/server/imports/parse'
-import { kindSchema, mappingSchema } from './schemas'
-import { validateRows } from '@/lib/server/imports/validate'
+import { kindSchema } from './schemas'
+import { z } from '@/lib/zod'
 
 export async function getImport(slug: string, id: string, edit = false) {
   const membership = await requireRole(
@@ -34,20 +34,18 @@ export async function readImportFile(
     throw new Error('No pudimos leer el archivo de importación.')
   return parseFile(Buffer.from(await data.arrayBuffer()), filename)
 }
-export async function previewImport(
-  db: Awaited<ReturnType<typeof createClient>>,
+export function previewImport(
   item: Awaited<ReturnType<typeof getImport>>['item'],
-  currency: string,
 ) {
-  const source = await readImportFile(
-    db,
-    item.storage_path,
-    item.original_filename,
-  )
-  const mapping = mappingSchema.parse(item.column_mapping)
-  return validateRows(source.rows, mapping, kindSchema.parse(item.kind), {
-    currency,
-  }).ok.slice(0, 20)
+  return z
+    .array(
+      z.object({
+        rowNumber: z.number().int().positive(),
+        data: z.record(z.string(), z.unknown()),
+      }),
+    )
+    .max(20)
+    .parse(item.preview)
 }
 export const kindLabels = {
   products: 'Productos',

@@ -1,4 +1,5 @@
 'use server'
+import type { Json } from '@/lib/supabase/types'
 import { redirect } from 'next/navigation'
 import { refresh } from 'next/cache'
 import { after } from 'next/server'
@@ -138,7 +139,7 @@ export async function saveMapping(form: FormData) {
     const errors = validateMapping(mapping, kind)
     if (errors.length) return { error: errors.join('; ') }
     const admin = createAdminClient()
-    const { data: file, error: downloadError } = await admin.storage
+    const { data: file, error: downloadError } = await db.storage
       .from('imports')
       .download(item.storage_path)
     if (downloadError || !file)
@@ -192,6 +193,10 @@ export async function saveMapping(form: FormData) {
     const { error: countsError } = await admin
       .from('imports')
       .update({
+        preview: result.ok.slice(0, 20).map(({ rowNumber, data }) => ({
+          rowNumber,
+          data: data as Record<string, Json>,
+        })),
         row_count: result.summary.total,
         ok_count: result.summary.valid,
         error_count: result.summary.invalid,
