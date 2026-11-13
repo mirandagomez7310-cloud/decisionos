@@ -1,6 +1,6 @@
 # DecisionOS — Modelo de datos inicial
 
-Estado: `0001_core` validada en CI (pgTAP: 4 suites, 155 aserciones, 2026-11-12). Las tablas se crean fase a fase (`ROADMAP.md`); este documento se actualiza con cada migración. Postgres 17 en Supabase, esquema `public`.
+Estado: `0002_business` escrita (pendiente de verificación). `0001_core` validada en CI (pgTAP: 4 suites, 155 aserciones, 2026-11-12). Las tablas se crean fase a fase (`ROADMAP.md`); este documento se actualiza con cada migración. Postgres 17 en Supabase, esquema `public`.
 
 ## Convenciones
 
@@ -45,19 +45,14 @@ $$;
 
 Leen `memberships`, no el JWT: revocar acceso surte efecto en la siguiente consulta. No reciben la columna de la fila como argumento: una función con `organization_id` como parámetro se ejecutaría **por fila**, y las agregaciones sobre `sale_lines` son el camino caliente del producto. Con `organization_id in (select …)` el conjunto se calcula una vez por consulta. Se comprueba con `EXPLAIN (ANALYZE)` sobre las vistas de métricas en la fase 2 con datos reales; índice `(user_id, organization_id)` en `memberships`.
 
-Patrón de políticas por tabla (ejemplo `products`):
+Patrón de políticas de negocio (ejemplo `products`):
 
 ```sql
 alter table public.products enable row level security;
 create policy products_select on public.products for select to authenticated
   using (organization_id in (select public.my_org_ids()));
-create policy products_insert on public.products for insert to authenticated
-  with check (organization_id in (select public.my_org_ids_with_role('{owner,admin,analyst}')));
-create policy products_update on public.products for update to authenticated
-  using (organization_id in (select public.my_org_ids_with_role('{owner,admin,analyst}')))
-  with check (organization_id in (select public.my_org_ids_with_role('{owner,admin,analyst}')));
-create policy products_delete on public.products for delete to authenticated
-  using (organization_id in (select public.my_org_ids_with_role('{owner,admin}')));
+revoke all on public.products from public, anon, authenticated;
+grant select on public.products to authenticated;
 ```
 
 `anon` no tiene políticas en ninguna tabla. La clave de servicio (jobs, importaciones) salta RLS: cada función de ese camino recibe `organization_id` explícito, lo escribe en cada fila y registra en `audit_log`.
@@ -90,6 +85,8 @@ Lectura: miembros de la misma organización. Escritura: owner/admin, **pero una 
 
 ### Datos de negocio (fase 2)
 
+Escritura exclusivamente por servicio (importaciones con `organization_id` explícito y auditoría); todos los roles de miembros solo leen mediante RLS. La edición de catálogo de la matriz usa ese camino de servicio. Todos los campos son obligatorios salvo los declarados nulos. Las FKs al tenant llevan `on delete cascade`; las referencias entre datos de negocio son compuestas, sin cascada. `source_import_id` queda sin FK hasta `0003_imports_jobs`. Solo `products`, `customers` y `receivables` tienen trigger `set_updated_at`.
+
 **products**
 `id` · `organization_id` · `sku text` · `name text` · `category text null` · `unit text null` · `standard_cost numeric(14,4) null` · `list_price numeric(14,4) null` · `active bool default true` · `created_at` · `updated_at`.
 `unique (organization_id, sku)` · `unique (organization_id, id)`.
@@ -99,19 +96,19 @@ Lectura: miembros de la misma organización. Escritura: owner/admin, **pero una 
 `unique (organization_id, code)` · `unique (organization_id, id)`.
 
 **sales** (cabecera: factura, remisión o pedido entregado)
-`id` · `organization_id` · `external_ref text` (folio del sistema origen) · `customer_id` · `sold_on date` · `status text check in ('completed','cancelled','returned')` · `currency char(3)` · `subtotal numeric(14,2)` · `tax numeric(14,2)` · `total numeric(14,2)` · `source_import_id uuid null` · `created_at`.
+`id` · `organization_id` · `external_ref text` (folio del sistema origen) · `customer_id` · `sold_on date` · `status text check in ('completed','cancelled','returned')` · `currency char(3) default 'MXN'` · `subtotal numeric(14,2)` · `tax numeric(14,2)` · `total numeric(14,2)` · `source_import_id uuid null` · `created_at`.
 `unique (organization_id, external_ref)` (reimportar el mismo folio actualiza, no duplica) · `unique (organization_id, id)` · FK compuesta a `customers`. Índice `(organization_id, sold_on)`.
 
 **sale_lines**
 `id` · `organization_id` · `sale_id` · `product_id` · `quantity numeric(14,3)` · `unit_price numeric(14,4)` · `unit_cost numeric(14,4) null` (costo en el momento de la venta; `null` si el origen no lo trae: las métricas de margen declaran cobertura) · `discount numeric(14,2) default 0` · `line_total numeric(14,2)`.
-FKs compuestas a `sales` y `products`. Índice `(organization_id, product_id)`.
+FKs compuestas a `sales` y `products`. Índices `(organization_id, product_id)` y `(organization_id, sale_id)`. `quantity <> 0`, `unit_price >= 0`; `line_total` es una columna normal recibida del origen.
 
 **inventory_snapshots** (existencias por fecha; los movimientos llegan cuando un origen los exporte)
-`organization_id` · `product_id` · `snapshot_on date` · `quantity numeric(14,3)` · `unit_cost numeric(14,4) null` · `source_import_id uuid null`. PK `(organization_id, product_id, snapshot_on)`.
+`organization_id` · `product_id` · `snapshot_on date` · `quantity numeric(14,3)` · `unit_cost numeric(14,4) null` · `source_import_id uuid null`. PK `(organization_id, product_id, snapshot_on)`. FK compuesta a `products`; índice `(organization_id, snapshot_on)`.
 
 **receivables** (cuentas por cobrar)
 `id` · `organization_id` · `customer_id` · `sale_id uuid null` · `external_ref text` · `issued_on date` · `due_on date` · `amount numeric(14,2)` · `paid_amount numeric(14,2) default 0` · `source_import_id uuid null` · `created_at` · `updated_at`.
-`unique (organization_id, external_ref)`. El estado (abierta, vencida, pagada) se deriva en vista, no se almacena.
+`unique (organization_id, external_ref)`. FKs compuestas a `customers` y `sales`; índice `(organization_id, due_on)`. `amount > 0` y `paid_amount >= 0 and paid_amount <= amount`. El estado (abierta, vencida, pagada) se deriva en vista, no se almacena.
 
 ### Importación y trabajos (fase 2)
 
