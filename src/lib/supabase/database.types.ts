@@ -91,14 +91,14 @@ isOneToOne: false
                   ]
                 },"imports": {
                   Row: {
-                    "preview": NonNullable<Json>,"column_mapping": NonNullable<Json>,"created_at": string,"created_by": string,"error_count": number,"finished_at": string | null,"id": string,"kind": string,"ok_count": number,"organization_id": string,"original_filename": string,"row_count": number,"status": string,"storage_path": string
+                    "column_mapping": NonNullable<Json>,"created_at": string,"created_by": string,"error_count": number,"finished_at": string | null,"id": string,"kind": string,"ok_count": number,"organization_id": string,"original_filename": string,"preview": NonNullable<Json>,"row_count": number,"status": string,"storage_path": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "preview"?: NonNullable<Json>,"column_mapping"?: NonNullable<Json>,"created_at"?: string,"created_by": string,"error_count"?: number,"finished_at"?: string | null,"id"?: string,"kind": string,"ok_count"?: number,"organization_id": string,"original_filename": string,"row_count"?: number,"status"?: string,"storage_path": string
+                    "column_mapping"?: NonNullable<Json>,"created_at"?: string,"created_by": string,"error_count"?: number,"finished_at"?: string | null,"id"?: string,"kind": string,"ok_count"?: number,"organization_id": string,"original_filename": string,"preview"?: NonNullable<Json>,"row_count"?: number,"status"?: string,"storage_path": string
                   }
                   Update: {
-                    "preview"?: NonNullable<Json>,"column_mapping"?: NonNullable<Json>,"created_at"?: string,"created_by"?: string,"error_count"?: number,"finished_at"?: string | null,"id"?: string,"kind"?: string,"ok_count"?: number,"organization_id"?: string,"original_filename"?: string,"row_count"?: number,"status"?: string,"storage_path"?: string
+                    "column_mapping"?: NonNullable<Json>,"created_at"?: string,"created_by"?: string,"error_count"?: number,"finished_at"?: string | null,"id"?: string,"kind"?: string,"ok_count"?: number,"organization_id"?: string,"original_filename"?: string,"preview"?: NonNullable<Json>,"row_count"?: number,"status"?: string,"storage_path"?: string
                   }
                   Relationships: [
                     {
@@ -343,14 +343,33 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            apply_import_sales: { Args: { p_organization_id: string; p_import_id: string; p_rows: Json }; Returns: { inserted_sales: number; inserted_lines: number; rejected: Json }[] },
-apply_import_products: { Args: { p_organization_id: string; p_import_id: string; p_rows: Json }; Returns: { inserted_products: number; rejected: Json }[] },
-apply_import_customers: { Args: { p_organization_id: string; p_import_id: string; p_rows: Json }; Returns: { inserted_customers: number; rejected: Json }[] },
-apply_import_inventory: { Args: { p_organization_id: string; p_import_id: string; p_rows: Json }; Returns: { inserted_inventory: number; rejected: Json }[] },
-apply_import_receivables: { Args: { p_organization_id: string; p_import_id: string; p_rows: Json }; Returns: { inserted_receivables: number; rejected: Json }[] },
-revert_import: { Args: { p_organization_id: string; p_import_id: string }; Returns: undefined },
-"accept_invitation":
+            "accept_invitation":
 { Args: { "token": string }; Returns: string
+                           },
+"apply_import_customers":
+{ Args: { "p_import_id": string,"p_organization_id": string,"p_rows": Json }; Returns: {
+              "inserted_customers": number,"rejected": Json
+            }[]
+                           },
+"apply_import_inventory":
+{ Args: { "p_import_id": string,"p_organization_id": string,"p_rows": Json }; Returns: {
+              "inserted_inventory": number,"rejected": Json
+            }[]
+                           },
+"apply_import_products":
+{ Args: { "p_import_id": string,"p_organization_id": string,"p_rows": Json }; Returns: {
+              "inserted_products": number,"rejected": Json
+            }[]
+                           },
+"apply_import_receivables":
+{ Args: { "p_import_id": string,"p_organization_id": string,"p_rows": Json }; Returns: {
+              "inserted_receivables": number,"rejected": Json
+            }[]
+                           },
+"apply_import_sales":
+{ Args: { "p_import_id": string,"p_organization_id": string,"p_rows": Json }; Returns: {
+              "inserted_lines": number,"inserted_sales": number,"rejected": Json
+            }[]
                            },
 "claim_job":
 { Args: { "kinds": (string)[],"worker": string }; Returns: {
@@ -421,6 +440,9 @@ revert_import: { Args: { p_organization_id: string; p_import_id: string }; Retur
                            },
 "my_org_ids_with_role":
 { Args: { "roles": (Database["public"]['Enums']["org_role"])[] }; Returns: string[]
+                           },
+"revert_import":
+{ Args: { "p_import_id": string,"p_organization_id": string }; Returns: undefined
                            }
           }
           Enums: {
