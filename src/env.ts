@@ -8,6 +8,7 @@ export const clientEnvSchema = z.object({
 
 export const serverEnvSchema = z.object({
   SUPABASE_SECRET_KEY: z.string().min(1),
+  JOBS_SECRET: z.string().min(1),
 })
 
 // server-only impide que un import accidental exponga la clave secreta al cliente.
@@ -19,6 +20,7 @@ export const env = {
   }),
   ...serverEnvSchema.parse({
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
+    JOBS_SECRET: process.env.JOBS_SECRET,
   }),
 }
 

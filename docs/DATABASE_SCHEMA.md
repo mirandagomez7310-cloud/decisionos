@@ -1,6 +1,6 @@
 # DecisionOS — Modelo de datos inicial
 
-Estado: `0001_core` validada en CI (pgTAP: 4 suites, 155 aserciones, 2026-11-12). Las tablas se crean fase a fase (`ROADMAP.md`); este documento se actualiza con cada migración. Postgres 17 en Supabase, esquema `public`.
+Estado: `0003_imports_jobs` escrita (pendiente de verificación). `0002_business` escrita (pendiente de verificación). `0001_core` validada en CI (pgTAP: 4 suites, 155 aserciones, 2026-11-12). Las tablas se crean fase a fase (`ROADMAP.md`); este documento se actualiza con cada migración. Postgres 17 en Supabase, esquema `public`.
 
 ## Convenciones
 
@@ -19,7 +19,7 @@ Estado: `0001_core` validada en CI (pgTAP: 4 suites, 155 aserciones, 2026-11-12)
 |---|---|---|---|---|
 | Ver dashboards, módulos, insights, reports | ✔ | ✔ | ✔ | ✔ |
 | Marcar insights (visto, descartado, hecho) | | ✔ | ✔ | ✔ |
-| Importar y revertir importaciones | | ✔ | ✔ | ✔ |
+| Importar y revertir importaciones | | | ✔ | ✔ |
 | Editar productos y clientes (catálogo) | | ✔ | ✔ | ✔ |
 | Gestionar miembros e invitaciones, ajustes, ver `audit_log` | | | ✔ | ✔ |
 | Facturación, borrar organización, transferir propiedad | | | | ✔ |
@@ -45,26 +45,21 @@ $$;
 
 Leen `memberships`, no el JWT: revocar acceso surte efecto en la siguiente consulta. No reciben la columna de la fila como argumento: una función con `organization_id` como parámetro se ejecutaría **por fila**, y las agregaciones sobre `sale_lines` son el camino caliente del producto. Con `organization_id in (select …)` el conjunto se calcula una vez por consulta. Se comprueba con `EXPLAIN (ANALYZE)` sobre las vistas de métricas en la fase 2 con datos reales; índice `(user_id, organization_id)` en `memberships`.
 
-Patrón de políticas por tabla (ejemplo `products`):
+Patrón de políticas de negocio (ejemplo `products`):
 
 ```sql
 alter table public.products enable row level security;
 create policy products_select on public.products for select to authenticated
   using (organization_id in (select public.my_org_ids()));
-create policy products_insert on public.products for insert to authenticated
-  with check (organization_id in (select public.my_org_ids_with_role('{owner,admin,analyst}')));
-create policy products_update on public.products for update to authenticated
-  using (organization_id in (select public.my_org_ids_with_role('{owner,admin,analyst}')))
-  with check (organization_id in (select public.my_org_ids_with_role('{owner,admin,analyst}')));
-create policy products_delete on public.products for delete to authenticated
-  using (organization_id in (select public.my_org_ids_with_role('{owner,admin}')));
+revoke all on public.products from public, anon, authenticated;
+grant select on public.products to authenticated;
 ```
 
 `anon` no tiene políticas en ninguna tabla. La clave de servicio (jobs, importaciones) salta RLS: cada función de ese camino recibe `organization_id` explícito, lo escribe en cada fila y registra en `audit_log`.
 
 **Vistas.** Una vista normal se ejecuta con los permisos de su propietario y **salta las políticas de las tablas**. Toda vista de métricas se crea `with (security_invoker = true)` para que apliquen las políticas del usuario que consulta. Las vistas materializadas no admiten RLS ni `security_invoker`: si hace falta materializar, la vista vive en un esquema no expuesto por la API (`private`) y se lee a través de una función `security invoker` que filtra por `organization_id in (select public.my_org_ids())`.
 
-**Storage.** Un solo bucket privado `imports`; ruta `<organization_id>/<import_id>/<archivo>`. Políticas en `storage.objects` por el primer segmento de la ruta: lectura si `(storage.foldername(name))[1]::uuid in (select public.my_org_ids())`, escritura solo para `owner/admin/analyst` de esa organización. Subida y descarga desde el servidor con URL firmada de corta duración; tamaño máximo y tipo validados antes de firmar.
+**Storage.** Un solo bucket privado `imports`; ruta `<organization_id>/<uuid>-<archivo>`, con nombre limitado a `[A-Za-z0-9._-]+` y sin subdirectorios. El `check` de `imports.storage_path` impide rutas con traversal. Lectura e inserción solo para owner/admin: `bucket_id = 'imports'` y `(storage.foldername(name))[1] in (select id::text from public.my_org_ids_with_role('{owner,admin}') as id)`. Sin update/delete para authenticated; borrado por servicio. Límite 25 MiB y MIME CSV, XLSX, XLS y texto plano. Subida y descarga para validar el mapeo mediante el cliente de usuario, aplicando las políticas de storage; el worker descarga con servicio.
 
 ## Tablas
 
@@ -76,7 +71,7 @@ Lectura: miembros. Actualización: owner/admin; borrado: solo owner; sin inserci
 
 **memberships**
 `organization_id` · `user_id uuid references auth.users` · `role org_role` · `created_at`. PK `(organization_id, user_id)`; índice `(user_id, organization_id)`.
-Lectura: miembros de la misma organización. Escritura: owner/admin, **pero una fila con `role = 'owner'` (crearla, cambiarla o borrarla) solo la toca un owner**, en la política y no solo en la UI; un owner no puede borrarse ni degradarse si es el último owner (trigger que bloquea la organización para serializar bajas). Trigger que escribe en `audit_log` todo cambio, con `data.old` y `data.new`; actor nulo y `actor_kind = 'system'` en el camino de servicio sin usuario.
+Inserción solo por las RPC `create_organization` y `accept_invitation`; `authenticated` no tiene permiso de inserción directa. Lectura: miembros de la misma organización. Actualización y borrado: owner/admin, **pero una fila con `role = 'owner'` (cambiarla o borrarla) solo la toca un owner**, en la política y no solo en la UI; un owner no puede borrarse ni degradarse si es el último owner (trigger que bloquea la organización para serializar bajas). Trigger que escribe en `audit_log` todo cambio, con `data.old` y `data.new`; actor nulo y `actor_kind = 'system'` en el camino de servicio sin usuario.
 
 **invitations**
 `id` · `organization_id` · `email text` · `role org_role` · `token_hash text` · `expires_at default now() + interval '7 days'` · `accepted_at null` · `created_by uuid references auth.users` · `created_at`. Lectura y escritura: owner/admin, con `created_by = auth.uid()` en la política; desde el cliente solo se actualiza `role` (token y caducidad no: se borra y se crea otra); `check (expires_at <= created_at + 30 días)` con `insert` concedido solo sobre las columnas que el cliente debe fijar (ni `id`, ni `created_at`, ni `accepted_at`). Las invitaciones de rol owner solo las crea, modifica o borra un owner para evitar escaladas indirectas. `token_hash` es único, hexadecimal SHA-256 de 64 caracteres; no se guarda el token en claro. La app genera 32 bytes aleatorios y calcula el hash de la representación textual UTF-8 enviada por URL. Índice único parcial `(organization_id, lower(email)) where accepted_at is null`: impide duplicados incluso con distintas mayúsculas. Índice adicional `(organization_id, expires_at)`.
@@ -84,11 +79,13 @@ Lectura: miembros de la misma organización. Escritura: owner/admin, **pero una 
 `accept_invitation(token text)` devuelve `organization_id` (`security definer`, `set search_path = ''`): exige usuario autenticado, bloquea la invitación por hash y valida caducidad, aceptación previa, correo de `auth.jwt()` sin distinguir mayúsculas y que quien invitó siga siendo owner/admin con rango para ese rol (una invitación muere con la membresía de quien la creó). Inserta membresía o eleva el rol existente (el enum está ordenado de mayor a menor privilegio), marca aceptación y audita en la misma transacción. Una invitación nunca degrada.
 
 **audit_log** (insert-only)
-`id bigint identity` · `organization_id` · `actor_user_id uuid null references auth.users` · `actor_kind text check in ('user','system','api')` · `action text` · `entity text` · `entity_id text` · `data jsonb default '{}'` · `created_at`. Lectura: owner/admin. Inserción: cualquier miembro de la organización, solo con `actor_user_id = auth.uid()`, `actor_kind = 'user'` y acciones fuera de los espacios `membership.*`, `organization.*` e `invitation.*` (reservados a triggers y RPC). Sin políticas ni permisos de update/delete para authenticated/anon. Índice `(organization_id, created_at desc)`.
+`id bigint identity` · `organization_id` · `actor_user_id uuid null references auth.users` · `actor_kind text check in ('user','system','api')` · `action text` · `entity text` · `entity_id text` · `data jsonb default '{}'` · `created_at`. Lectura: owner/admin. Inserción: cualquier miembro de la organización, solo con `actor_user_id = auth.uid()`, `actor_kind = 'user'` y acciones que cumplan `action ~ '^(imports|invitations|members)\.[a-z_]+$'` (los eventos de triggers y RPC quedan reservados). Sin políticas ni permisos de update/delete para authenticated/anon. Índice `(organization_id, created_at desc)`.
 
 **Integridad y permisos del núcleo.** Las referencias a organizaciones llevan `on delete cascade` para que el owner pueda borrar el tenant completo; sus logs también desaparecen y las bajas por esa cascada no generan auditoría nueva. Los demás campos son obligatorios salvo los declarados nulos. No hay FKs compuestas en este corte: las únicas referencias son al tenant raíz y a `auth.users`; las referencias compuestas entre datos de negocio llegan en fase 2. `authenticated` solo actualiza campos editables: ajustes de organización; `memberships.role`; correo, rol, hash y caducidad de invitaciones. Identidades, fechas y aceptación no son editables directamente. `anon` no tiene permisos sobre las tablas, la secuencia ni las funciones del núcleo. Solo las cuatro RPC tienen ejecución concedida a `authenticated`; las funciones de trigger no se exponen. UUID y SHA-256 usan funciones nativas de Postgres, sin extensiones adicionales.
 
 ### Datos de negocio (fase 2)
+
+Escritura exclusivamente por servicio (importaciones con `organization_id` explícito y auditoría); todos los roles de miembros solo leen mediante RLS. La edición de catálogo de la matriz usa ese camino de servicio. Todos los campos son obligatorios salvo los declarados nulos. Las FKs al tenant llevan `on delete cascade`; las referencias entre datos de negocio son compuestas, sin cascada. `source_import_id` tiene FK compuesta a `imports(organization_id, id)` desde `0003_imports_jobs`. Solo `products`, `customers` y `receivables` tienen trigger `set_updated_at`.
 
 **products**
 `id` · `organization_id` · `sku text` · `name text` · `category text null` · `unit text null` · `standard_cost numeric(14,4) null` · `list_price numeric(14,4) null` · `active bool default true` · `created_at` · `updated_at`.
@@ -99,31 +96,44 @@ Lectura: miembros de la misma organización. Escritura: owner/admin, **pero una 
 `unique (organization_id, code)` · `unique (organization_id, id)`.
 
 **sales** (cabecera: factura, remisión o pedido entregado)
-`id` · `organization_id` · `external_ref text` (folio del sistema origen) · `customer_id` · `sold_on date` · `status text check in ('completed','cancelled','returned')` · `currency char(3)` · `subtotal numeric(14,2)` · `tax numeric(14,2)` · `total numeric(14,2)` · `source_import_id uuid null` · `created_at`.
+`id` · `organization_id` · `external_ref text` (folio del sistema origen) · `customer_id` · `sold_on date` · `status text check in ('completed','cancelled','returned')` · `currency char(3) default 'MXN'` · `subtotal numeric(14,2)` · `tax numeric(14,2)` · `total numeric(14,2)` · `source_import_id uuid null` · `created_at`.
 `unique (organization_id, external_ref)` (reimportar el mismo folio actualiza, no duplica) · `unique (organization_id, id)` · FK compuesta a `customers`. Índice `(organization_id, sold_on)`.
 
 **sale_lines**
 `id` · `organization_id` · `sale_id` · `product_id` · `quantity numeric(14,3)` · `unit_price numeric(14,4)` · `unit_cost numeric(14,4) null` (costo en el momento de la venta; `null` si el origen no lo trae: las métricas de margen declaran cobertura) · `discount numeric(14,2) default 0` · `line_total numeric(14,2)`.
-FKs compuestas a `sales` y `products`. Índice `(organization_id, product_id)`.
+FKs compuestas a `sales` y `products`. Índices `(organization_id, product_id)` y `(organization_id, sale_id)`. `quantity <> 0`, `unit_price >= 0`; `line_total` es una columna normal recibida del origen.
 
 **inventory_snapshots** (existencias por fecha; los movimientos llegan cuando un origen los exporte)
-`organization_id` · `product_id` · `snapshot_on date` · `quantity numeric(14,3)` · `unit_cost numeric(14,4) null` · `source_import_id uuid null`. PK `(organization_id, product_id, snapshot_on)`.
+`organization_id` · `product_id` · `snapshot_on date` · `quantity numeric(14,3)` · `unit_cost numeric(14,4) null` · `source_import_id uuid null`. PK `(organization_id, product_id, snapshot_on)`. FK compuesta a `products`; índice `(organization_id, snapshot_on)`.
 
 **receivables** (cuentas por cobrar)
 `id` · `organization_id` · `customer_id` · `sale_id uuid null` · `external_ref text` · `issued_on date` · `due_on date` · `amount numeric(14,2)` · `paid_amount numeric(14,2) default 0` · `source_import_id uuid null` · `created_at` · `updated_at`.
-`unique (organization_id, external_ref)`. El estado (abierta, vencida, pagada) se deriva en vista, no se almacena.
+`unique (organization_id, external_ref)`. FKs compuestas a `customers` y `sales`; índice `(organization_id, due_on)`. `amount > 0` y `paid_amount >= 0 and paid_amount <= amount`. El estado (abierta, vencida, pagada) se deriva en vista, no se almacena.
 
 ### Importación y trabajos (fase 2)
 
 **imports**
-`id` · `organization_id` · `kind text check in ('sales','products','customers','inventory','receivables')` · `storage_path text` (bucket privado `imports/<org>/…`) · `original_filename text` · `status text check in ('pending','processing','done','failed','reverted')` · `column_mapping jsonb` · `row_count int` · `ok_count int` · `error_count int` · `created_by uuid` · `created_at` · `finished_at null`.
+Lectura: cualquier miembro. Inserción: owner/admin, `created_by = auth.uid()` y estado inicial `pending`; grant solo sobre `organization_id, kind, storage_path, original_filename, column_mapping, created_by`. Sin update/delete para authenticated. `unique (organization_id, id)`; ruta obligatoriamente bajo `organization_id/`. `column_mapping` por defecto `{}`; contadores no negativos por defecto 0. `created_by` referencia `auth.users`.
+`id` · `organization_id` · `kind text check in ('sales','products','customers','inventory','receivables')` · `storage_path text` (bucket privado; `^<org>/[0-9a-f-]{36}-[A-Za-z0-9._-]+$`) · `original_filename text` · `status text check in ('pending','processing','done','failed','reverted')` · `column_mapping jsonb` · `preview jsonb not null default '[]'` (primeras 20 filas válidas, `{rowNumber, data}`, guardadas al validar; el detalle no descarga el archivo) · `row_count int` · `ok_count int` · `error_count int` · `created_by uuid` · `created_at` · `finished_at null`.
 
 **import_rows** (staging)
+Lectura: owner/admin; escritura solo servicio. FK compuesta a imports; índice `(import_id, row_number)` y número de fila positivo.
 `id bigint identity` · `import_id` · `organization_id` · `row_number int` · `raw jsonb` · `error text null`. Se consulta para mostrar errores por fila; se borra al revertir.
 
 **jobs**
 `id` · `organization_id uuid null` (null = sistema) · `kind text` · `payload jsonb` · `status text check in ('queued','running','done','failed')` · `attempts int default 0` · `max_attempts int default 3` · `run_after timestamptz default now()` · `locked_at null` · `locked_by text null` · `progress jsonb` · `last_error text null` · `created_at` · `finished_at null`.
+`kind` limitado a `import` y `revert_import`; `payload` y `progress` por defecto `{}`, estado inicial `queued`, intentos no negativos y máximo positivo. Sin trigger `updated_at`.
+
+`claim_job(worker text, kinds text[])`: solo service_role, security definer con search_path vacío. Reclama un queued vencido del tipo solicitado con intentos restantes mediante `FOR UPDATE SKIP LOCKED`, lo marca running, incrementa attempts y fija bloqueo; devuelve null si no hay. `complete_job(id uuid, status text, last_error text)`: mismos permisos, acepta done/failed sobre un running, limpia bloqueo y fija finished_at al terminar. Failed con intentos restantes vuelve a queued, sin finished_at, con espera de un minuto por intento.
+
 Índice parcial `(run_after) where status = 'queued'`. Solo la clave de servicio escribe; los miembros leen los de su organización (progreso de importación).
+
+**RPC de importación (`20261113020000_imports_rpc.sql`).** Todas son `security definer`, fijan `search_path = ''` y solo permiten ejecución a `service_role`. Reciben `p_organization_id uuid` y `p_import_id uuid`; bloquean la importación y exigen que pertenezca a esa organización (`42501` en caso contrario).
+
+- `apply_import_sales(..., p_rows jsonb)` devuelve `(inserted_sales int, inserted_lines int, rejected jsonb)`: crea catálogos nuevos que traen nombre, agrupa cabeceras, calcula subtotal y total en SQL con `numeric`, hace upsert de ventas y reemplaza sus líneas dentro de una transacción. Rechaza cabeceras inconsistentes con `22023`.
+- `apply_import_products`, `apply_import_customers`, `apply_import_inventory` y `apply_import_receivables` reciben el mismo `p_rows` y devuelven `(inserted_<kind> int, rejected jsonb)`. Hacen upsert en conjunto; los catálogos conservan opcionales/active ausentes y las cuentas resuelven `sale_id` por `sale_external_ref` de la organización.
+- `rejected` contiene `{external_ref, row_number, motivo}` para referencias de catálogo inexistentes sin nombre. El worker registra esas filas en `import_rows`, envía hasta 2.000 filas por RPC y actualiza el progreso por lote. Los folios viajan completos; un folio con más de 2.000 líneas se detecta antes de aplicar ventas.
+- `revert_import(...) returns void` elimina líneas, ventas, inventarios, cuentas y errores del import, y lo marca `reverted`. Conserva productos/clientes y desvincula las cuentas de otros imports antes de borrar sus ventas asociadas.
 
 ### Inteligencia (fase 5)
 
@@ -157,3 +167,7 @@ Vistas `with (security_invoker = true)` (ver "Vistas" arriba: sin esa opción no
 3. `0003_imports_jobs`: `imports`, `import_rows`, `jobs`, bucket privado `imports` con sus políticas en `storage.objects` y test cruzado.
 4. `0004_metrics_views`: vistas de métricas.
 5. `0005_insights`: `insight_kind`, `insights`. (`alert_deliveries` y `alert_rules` se diseñan en la fase 5, en una migración propia.)
+
+## Reversión de importaciones
+
+La reversión elimina ventas y líneas, inventarios y cuentas por cobrar de source_import_id, además del staging. Productos y clientes se conservan: no tienen source_import_id. Las cuentas de otras importaciones conservan sus saldos y pierden solo la referencia a la venta eliminada.

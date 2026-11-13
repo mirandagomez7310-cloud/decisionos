@@ -132,21 +132,17 @@ test.describe('miembros e invitaciones', () => {
       .eq('organization_id', org!.id)
       .eq('user_id', analyst.id)
     await page.goto(members)
-    const row = page
-      .getByRole('row')
-      .filter({
-        has: page.getByRole('cell', { name: email('analyst'), exact: true }),
-      })
+    const row = page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: email('analyst'), exact: true }),
+    })
     await row.getByRole('combobox').selectOption('viewer')
     await row.getByRole('button', { name: 'Guardar rol', exact: true }).click()
     await expect(
       row.getByRole('alert').filter({ hasText: 'Cambio guardado' }),
     ).toBeVisible()
-    const ownerRow = page
-      .getByRole('row')
-      .filter({
-        has: page.getByRole('cell', { name: email('owner'), exact: true }),
-      })
+    const ownerRow = page.getByRole('row').filter({
+      has: page.getByRole('cell', { name: email('owner'), exact: true }),
+    })
     await ownerRow.getByRole('combobox').selectOption('admin')
     await ownerRow
       .getByRole('button', { name: 'Guardar rol', exact: true })
@@ -157,7 +153,9 @@ test.describe('miembros e invitaciones', () => {
         .filter({ hasText: 'al menos un propietario' }),
     ).toBeVisible()
   })
-  test('vistas principales no violan CSP', async ({ page }) => {
+  test('vistas principales no violan CSP ni desbordan en horizontal', async ({
+    page,
+  }) => {
     await page.addInitScript(() => {
       const state = window as unknown as { violations: string[] }
       state.violations = []
@@ -170,11 +168,20 @@ test.describe('miembros e invitaciones', () => {
       '/o/' + slug,
       members,
       `/o/${slug}/settings/audit`,
+      `/o/${slug}/imports`,
+      `/o/${slug}/imports/new`,
+      `/o/${slug}/catalog/products`,
+      `/o/${slug}/catalog/customers`,
       '/organizations/new',
       '/invitations/' + 'a'.repeat(64),
     ]) {
       await page.goto(url)
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+      // En móvil un desbordamiento aleja el zoom y descoloca los clics.
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+        url,
+      ).toBeLessThanOrEqual(page.viewportSize()!.width)
       expect(
         await page.evaluate(
           () => (window as unknown as { violations: string[] }).violations,

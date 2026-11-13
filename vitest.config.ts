@@ -18,6 +18,7 @@ export default defineConfig({
       NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
       SUPABASE_SECRET_KEY: 'sb_secret_test',
+      JOBS_SECRET: 'jobs_test_secret',
     },
   },
 })
