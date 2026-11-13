@@ -21,6 +21,12 @@ export default async function OrganizationLayout({
         <Link className="underline" href={'/o/' + slug}>
           Inicio
         </Link>
+        <Link className="underline" href={'/o/' + slug + '/imports'}>
+          Importaciones
+        </Link>
+        <Link className="underline" href={'/o/' + slug + '/catalog/products'}>
+          Catálogo
+        </Link>
         {(role === 'owner' || role === 'admin') && (
           <Link className="underline" href={'/o/' + slug + '/settings/members'}>
             Miembros
