@@ -1,6 +1,6 @@
 # DecisionOS — Modelo de datos inicial
 
-Estado: diseño (fase 0). Ninguna migración escrita. Las tablas se crean fase a fase (`ROADMAP.md`); este documento se actualiza con cada migración. Postgres en Supabase, esquema `public`.
+Estado: `0001_core` validada en CI (pgTAP: 4 suites, 155 aserciones, 2026-11-12). Las tablas se crean fase a fase (`ROADMAP.md`); este documento se actualiza con cada migración. Postgres 17 en Supabase, esquema `public`.
 
 ## Convenciones
 
@@ -72,17 +72,21 @@ create policy products_delete on public.products for delete to authenticated
 
 **organizations**
 `id` · `name text` · `slug text unique` (URL) · `country char(2) default 'MX'` · `currency char(3) default 'MXN'` · `timezone text default 'America/Mexico_City'` · `settings jsonb default '{}'` · `created_at` · `updated_at`.
-Lectura: miembros. Escritura: owner/admin. Creación: función `create_organization(name)` (`security definer`) que inserta la organización y la membresía `owner` del usuario en la misma transacción.
+Lectura: miembros. Actualización: owner/admin; borrado: solo owner; sin inserción directa. Creación: función `create_organization(name text, slug text)` que devuelve la fila `organizations` (incluido su `id`), exige usuario autenticado e inserta organización, membresía `owner` y auditoría en la misma transacción (`security definer`, `set search_path = ''`). `slug` cumple `^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])?$`.
 
 **memberships**
 `organization_id` · `user_id uuid references auth.users` · `role org_role` · `created_at`. PK `(organization_id, user_id)`; índice `(user_id, organization_id)`.
-Lectura: miembros de la misma organización. Escritura: owner/admin, **pero una fila con `role = 'owner'` (crearla, cambiarla o borrarla) solo la toca un owner**, en la política y no solo en la UI; un owner no puede degradarse si es el último owner (trigger). Trigger que escribe en `audit_log` todo cambio.
+Lectura: miembros de la misma organización. Escritura: owner/admin, **pero una fila con `role = 'owner'` (crearla, cambiarla o borrarla) solo la toca un owner**, en la política y no solo en la UI; un owner no puede borrarse ni degradarse si es el último owner (trigger que bloquea la organización para serializar bajas). Trigger que escribe en `audit_log` todo cambio, con `data.old` y `data.new`; actor nulo y `actor_kind = 'system'` en el camino de servicio sin usuario.
 
 **invitations**
-`id` · `organization_id` · `email text` · `role org_role` · `token_hash text` · `expires_at` · `accepted_at null` · `created_by uuid` · `created_at`. Escritura: owner/admin. La aceptación la hace una función `security definer` que valida el token y crea la membresía.
+`id` · `organization_id` · `email text` · `role org_role` · `token_hash text` · `expires_at default now() + interval '7 days'` · `accepted_at null` · `created_by uuid references auth.users` · `created_at`. Lectura y escritura: owner/admin, con `created_by = auth.uid()` en la política; desde el cliente solo se actualiza `role` (token y caducidad no: se borra y se crea otra); `check (expires_at <= created_at + 30 días)` con `insert` concedido solo sobre las columnas que el cliente debe fijar (ni `id`, ni `created_at`, ni `accepted_at`). Las invitaciones de rol owner solo las crea, modifica o borra un owner para evitar escaladas indirectas. `token_hash` es único, hexadecimal SHA-256 de 64 caracteres; no se guarda el token en claro. La app genera 32 bytes aleatorios y calcula el hash de la representación textual UTF-8 enviada por URL. Índice único parcial `(organization_id, lower(email)) where accepted_at is null`: impide duplicados incluso con distintas mayúsculas. Índice adicional `(organization_id, expires_at)`.
+
+`accept_invitation(token text)` devuelve `organization_id` (`security definer`, `set search_path = ''`): exige usuario autenticado, bloquea la invitación por hash y valida caducidad, aceptación previa, correo de `auth.jwt()` sin distinguir mayúsculas y que quien invitó siga siendo owner/admin con rango para ese rol (una invitación muere con la membresía de quien la creó). Inserta membresía o eleva el rol existente (el enum está ordenado de mayor a menor privilegio), marca aceptación y audita en la misma transacción. Una invitación nunca degrada.
 
 **audit_log** (insert-only)
-`id bigint identity` · `organization_id` · `actor_user_id uuid null` · `actor_kind text check in ('user','system','api')` · `action text` · `entity text` · `entity_id text` · `data jsonb` · `created_at`. Lectura: owner/admin. Sin políticas de update/delete. Índice `(organization_id, created_at desc)`.
+`id bigint identity` · `organization_id` · `actor_user_id uuid null references auth.users` · `actor_kind text check in ('user','system','api')` · `action text` · `entity text` · `entity_id text` · `data jsonb default '{}'` · `created_at`. Lectura: owner/admin. Inserción: cualquier miembro de la organización, solo con `actor_user_id = auth.uid()`, `actor_kind = 'user'` y acciones fuera de los espacios `membership.*`, `organization.*` e `invitation.*` (reservados a triggers y RPC). Sin políticas ni permisos de update/delete para authenticated/anon. Índice `(organization_id, created_at desc)`.
+
+**Integridad y permisos del núcleo.** Las referencias a organizaciones llevan `on delete cascade` para que el owner pueda borrar el tenant completo; sus logs también desaparecen y las bajas por esa cascada no generan auditoría nueva. Los demás campos son obligatorios salvo los declarados nulos. No hay FKs compuestas en este corte: las únicas referencias son al tenant raíz y a `auth.users`; las referencias compuestas entre datos de negocio llegan en fase 2. `authenticated` solo actualiza campos editables: ajustes de organización; `memberships.role`; correo, rol, hash y caducidad de invitaciones. Identidades, fechas y aceptación no son editables directamente. `anon` no tiene permisos sobre las tablas, la secuencia ni las funciones del núcleo. Solo las cuatro RPC tienen ejecución concedida a `authenticated`; las funciones de trigger no se exponen. UUID y SHA-256 usan funciones nativas de Postgres, sin extensiones adicionales.
 
 ### Datos de negocio (fase 2)
 
@@ -148,7 +152,7 @@ Vistas `with (security_invoker = true)` (ver "Vistas" arriba: sin esa opción no
 
 ## Orden de migraciones
 
-1. `0001_core`: `org_role`, `organizations`, `memberships`, `invitations`, `audit_log`, funciones `my_org_ids`, `my_org_ids_with_role`, `create_organization`, trigger de `updated_at`, políticas y tests.
+1. `0001_core`: `org_role`, `organizations`, `memberships`, `invitations`, `audit_log`, funciones `my_org_ids`, `my_org_ids_with_role`, `create_organization`, `accept_invitation`, triggers de `updated_at`, último owner y auditoría, políticas, permisos mínimos y tests.
 2. `0002_business`: `products`, `customers`, `sales`, `sale_lines`, `inventory_snapshots`, `receivables`.
 3. `0003_imports_jobs`: `imports`, `import_rows`, `jobs`, bucket privado `imports` con sus políticas en `storage.objects` y test cruzado.
 4. `0004_metrics_views`: vistas de métricas.

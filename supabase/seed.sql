@@ -1,0 +1,1 @@
+-- Los datos E2E se crearán por API en el corte de autenticación.
