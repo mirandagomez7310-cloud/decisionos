@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { formatMoney } from '@/lib/format'
+import { formatDay, formatMoney } from '@/lib/format'
 export type ChartRow = {
   currentDay?: string
   previousDay?: string
@@ -10,6 +10,7 @@ export type ChartRow = {
 export function LineChartHover({ rows }: { rows: ChartRow[] }) {
   const [active, setActive] = useState<number | null>(null)
   const row = active === null ? null : rows[active]
+  const pct = ((active ?? 0) / Math.max(1, rows.length - 1)) * 100
   return (
     <div className="chart-hover">
       <input
@@ -34,7 +35,7 @@ export function LineChartHover({ rows }: { rows: ChartRow[] }) {
               Math.min(
                 rows.length - 1,
                 Math.round(
-                  (((event.clientX - box.left) / box.width - 0.16) / 0.66) *
+                  ((event.clientX - box.left) / box.width) *
                     Math.max(1, rows.length - 1),
                 ),
               ),
@@ -64,18 +65,32 @@ export function LineChartHover({ rows }: { rows: ChartRow[] }) {
         <>
           <svg aria-hidden="true" width="100%" height="240">
             <line
-              x1={`${16 + ((active ?? 0) / Math.max(1, rows.length - 1)) * 66}%`}
-              x2={`${16 + ((active ?? 0) / Math.max(1, rows.length - 1)) * 66}%`}
+              x1={`${pct}%`}
+              x2={`${pct}%`}
               y1="18"
               y2="200"
               className="chart-crosshair"
             />
           </svg>
-          <output className="chart-tooltip">
-            Actual · {row.currentDay ?? 'Sin día equivalente'}:{' '}
+          {/* Junto a la cruz, del lado con más espacio. */}
+          <output
+            className="chart-tooltip"
+            style={
+              pct > 50
+                ? { right: `calc(${100 - pct}% + 8px)` }
+                : { left: `calc(${pct}% + 8px)` }
+            }
+          >
+            Actual ·{' '}
+            {row.currentDay ? formatDay(row.currentDay) : 'Sin día equivalente'}
+            :{' '}
             {row.current === undefined ? 'Sin dato' : formatMoney(row.current)}
             <br />
-            Anterior · {row.previousDay ?? 'Sin día equivalente'}:{' '}
+            Anterior ·{' '}
+            {row.previousDay
+              ? formatDay(row.previousDay)
+              : 'Sin día equivalente'}
+            :{' '}
             {row.previous === undefined
               ? 'Sin dato'
               : formatMoney(row.previous)}

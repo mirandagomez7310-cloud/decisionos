@@ -7,6 +7,7 @@ import {
   formatPoints,
   formatPeriod,
   formatAxisMoney,
+  formatDay,
 } from './format'
 describe('formatos del dashboard', () => {
   it('conserva centavos y usa signos explícitos y menos tipográfico', () => {
@@ -26,5 +27,6 @@ describe('formatos del dashboard', () => {
     expect(formatPeriod('2025-12-20', '2026-01-18')).toBe(
       '20 dic 2025–18 ene 2026',
     )
+    expect(formatDay('2026-11-10')).toBe('10 nov')
   })
 })

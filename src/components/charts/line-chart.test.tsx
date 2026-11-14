@@ -40,12 +40,12 @@ it('incluye resumen, tabla exacta y navegación por teclado con periodos desigua
   ).toBeInTheDocument()
   const explorer = screen.getByRole('slider')
   fireEvent.focus(explorer)
-  expect(screen.getByRole('status')).toHaveTextContent('2026-11-01: $123.45')
+  expect(screen.getByRole('status')).toHaveTextContent('1 nov: $123.45')
   fireEvent.keyDown(explorer, { key: 'ArrowRight' })
   expect(screen.getByRole('status')).toHaveTextContent(
     'Sin día equivalente: Sin dato',
   )
-  expect(screen.getByRole('status')).toHaveTextContent('2026-10-02: $42.00')
+  expect(screen.getByRole('status')).toHaveTextContent('2 oct: $42.00')
 })
 it('presenta ceros y valores negativos sin geometría inválida', () => {
   const { container } = render(

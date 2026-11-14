@@ -36,6 +36,16 @@ export function formatPeriod(from: string, to: string) {
     ? `${start.getUTCDate()}–${full(end)}`
     : `${full(start)}–${full(end)}`
 }
+// Fecha ISO (AAAA-MM-DD) como «10 nov».
+export const formatDay = (day: string) =>
+  new Intl.DateTimeFormat('es-MX', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  })
+    .format(new Date(day + 'T00:00:00Z'))
+    .replaceAll(' de ', ' ')
+    .replaceAll('.', '')
 export const formatAxisMoney = (value: number) =>
   minus(
     new Intl.NumberFormat('es-MX', {

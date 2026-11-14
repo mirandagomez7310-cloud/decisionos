@@ -1,5 +1,5 @@
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- El SVG mantiene ejes vectoriales y semántica de imagen. */
-import { formatMoney, formatAxisMoney } from '@/lib/format'
+import { formatMoney, formatAxisMoney, formatDay } from '@/lib/format'
 import { LineChartHover, type ChartRow } from './line-chart-hover'
 type DailySale = { day: string; net_sales: number }
 export function LineChart({
@@ -24,7 +24,8 @@ export function LineChart({
   const min = Math.min(0, ...values)
   const max = Math.max(1, ...values)
   const y = (value: number) => 200 - ((value - min) / (max - min)) * 175
-  const x = (index: number) => `${16 + (index / Math.max(1, count - 1)) * 66}%`
+  // El SVG ocupa el área de trazado; ejes y etiquetas directas van en el padding de .chart-canvas (overflow visible).
+  const x = (index: number) => `${(index / Math.max(1, count - 1)) * 100}%`
   const last = current.at(-1)
   const prevLast = previous.at(-1)
   return (
@@ -46,13 +47,13 @@ export function LineChart({
             return (
               <g key={tick}>
                 <line
-                  x1="16%"
-                  x2="82%"
+                  x1="0%"
+                  x2="100%"
                   y1={y(value)}
                   y2={y(value)}
                   className="chart-grid"
                 />
-                <text x="0" y={y(value) + 4} className="chart-axis">
+                <text x="-64" y={y(value) + 4} className="chart-axis">
                   {formatAxisMoney(value)}
                 </text>
               </g>
@@ -145,14 +146,14 @@ export function LineChart({
                 <tr key={index}>
                   <th scope="row">{index + 1}</th>
                   <td>
-                    {row.currentDay ?? 'Sin día'}
+                    {row.currentDay ? formatDay(row.currentDay) : 'Sin día'}
                     <br />
                     {row.current === undefined
                       ? 'Sin dato'
                       : formatMoney(row.current)}
                   </td>
                   <td>
-                    {row.previousDay ?? 'Sin día'}
+                    {row.previousDay ? formatDay(row.previousDay) : 'Sin día'}
                     <br />
                     {row.previous === undefined
                       ? 'Sin dato'
