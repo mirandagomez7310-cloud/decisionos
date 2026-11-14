@@ -5,9 +5,11 @@ import { todayInMexico, resolvePeriod } from '../src/lib/server/metrics/period'
 const test = base.extend<{
   dashboardOwner: { orgSlug: string; userEmail: string }
 }>({
+  // oxlint-disable-next-line no-empty-pattern -- Playwright exige desestructurar el primer argumento del fixture.
   dashboardOwner: async ({}, use) => {
     const db = adminClient()
-    const suffix = crypto.randomUUID()
+    // El check de slug admite 40 caracteres: 10 de prefijo + 12 hex.
+    const suffix = crypto.randomUUID().replaceAll('-', '').slice(0, 12)
     const orgSlug = `dashboard-${suffix}`
     const userEmail = `dashboard-${suffix}@example.com`
     const { data: user, error: userError } = await db.auth.admin.createUser({
