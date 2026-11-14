@@ -149,7 +149,25 @@ Las alertas son insights con `severity in ('warning','critical')`; el envío se 
 
 ## Métricas en SQL
 
-Vistas `with (security_invoker = true)` (ver "Vistas" arriba: sin esa opción no aplican las políticas) que la aplicación consulta con rango de fechas: margen por producto y cliente, ventas por periodo con variación, rotación y días de inventario, capital inmovilizado, antigüedad de saldos. Cada vista declara su **cobertura** (por ejemplo, porcentaje de líneas con `unit_cost`). Se materializan por job, en el esquema `private` y tras una función que filtra por organización, solo si una consulta real supera el presupuesto de la página.
+Implementadas en `20261114000000_metrics.sql` (0004). Vista `sale_lines_enriched with (security_invoker = true)`: l?neas con `sold_on`, `status` y `customer_id`, unidas a ventas por la FK compuesta. SELECT solo para authenticated.
+
+RPC SQL stable, security invoker, search_path vac?o y EXECUTE solo para authenticated (revocado a public y anon). Todas filtran la organizaci?n solicitada y ventas completed; RLS limita los datos al usuario.
+
+- `metrics_summary(p_organization_id uuid, p_from date, p_to date, p_prev_from date, p_prev_to date)`: una fila con net_sales, prev_net_sales, net_sales_change_pct, sales_count (cabeceras), gross_margin, margin_base, margin_pct, prev_margin_pct, margin_pct_change_pts y coverage.
+- `metrics_daily_sales(p_organization_id uuid, p_from date, p_to date)`: day y net_sales, un d?a por fila del rango inclusivo mediante generate_series, con cero sin ventas.
+- `metrics_by_product` y `metrics_by_customer`: mismos cinco par?metros del resumen; devuelven tablas compatibles con order/range de PostgREST. Incluyen entidades con ventas en cualquiera de los periodos: product_id/sku/name o customer_id/code/name, net_sales, prev_net_sales, delta, delta_pct, gross_margin, margin_pct y coverage.
+
+Todos los importes y cocientes se calculan con numeric en SQL, nunca en TypeScript:
+
+- Venta neta: sum(sale_lines.line_total) de ventas completed con sold_on en el rango inclusivo; cancelled y returned no cuentan.
+- Base de margen: venta neta de las l?neas con unit_cost no nulo.
+- Margen bruto: sum(line_total - quantity * unit_cost) de esas l?neas, redondeado a 2 decimales.
+- Margen %: margen bruto / base de margen * 100, a 1 decimal; null si la base es cero.
+- Cobertura: base de margen / venta neta * 100, a 1 decimal; null si la venta neta es cero.
+- Variaci?n %: (actual - anterior) / anterior * 100, a 1 decimal; null si anterior es cero (sin comparaci?n).
+- Variaci?n de margen en puntos: margen_pct_actual - margen_pct_anterior, a 1 decimal; null si falta alguno.
+
+Los agregados sin datos devuelven importes y conteos cero, con porcentajes null. Los periodos de aplicaci?n se resuelven en TS puro, con fecha local America/Mexico_City.
 
 ## Tests pgTAP (uno por tabla, `supabase/tests/<tabla>_rls.test.sql`)
 

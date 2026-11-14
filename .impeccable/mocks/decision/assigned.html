@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440, initial-scale=1">
+<title>DecisionOS · Piso de almacén</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@400;500;600&amp;display=swap">
+<style>
+* { box-sizing: border-box; }
+html, body { width: 1440px; height: 900px; overflow: hidden; margin: 0; }
+body { font-family: var(--font), sans-serif; font-size: 14px; font-variant-numeric: tabular-nums; color: var(--ink); background: var(--paper); }
+header { height: 72px; display: flex; align-items: center; padding: 0 38px; gap: 40px; }
+.brand { font-size: 24px; font-weight: 700; letter-spacing: -.8px; } nav { display: flex; gap: 26px; } a { color: inherit; text-decoration: none; padding: 12px 0; } a[aria-current] { border-bottom: 2px solid currentColor; font-weight: 700; }
+.org { margin-left: auto; } select { font: inherit; color: inherit; border: 1px solid var(--line); background: transparent; padding: 11px 12px; border-radius: 3px; } option { color: #1A1D21; } :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; } ::selection { background: var(--accent); color: white; }
+main { padding: 26px 38px; } .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; } h1 { font-size: 30px; letter-spacing: -.8px; margin: 0 0 7px; } h2 { font-size: 20px; margin: 0; } h3 { font-size: 15px; margin: 0 0 12px; } p { margin: 0; } .muted,.comparison { color: var(--muted); }
+.metrics { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 25px; } .metric { min-width: 0; padding: 20px 24px; } .metric h2 { font-size: 16px; font-weight: 500; } .value { font-size: 48px; font-weight: 600; letter-spacing: -2px; white-space: nowrap; margin: 14px 0; } .rate { font-size: 24px; letter-spacing: -.5px; } .change { font-weight: 650; margin-right: 8px; } .coverage { margin-top: 10px; font-size: 12px; }
+.chart-head { display: flex; align-items: center; justify-content: space-between; } .legend { display: flex; gap: 20px; font-size: 12px; color: var(--muted); } .legend span:before { content: ''; display: inline-block; width: 18px; height: 3px; background: var(--accent); vertical-align: middle; margin-right: 7px; } .legend span:last-child:before { background: var(--previous); }
+svg { width: 100%; height: 235px; display: block; margin-top: 7px; } .grid { stroke: var(--line); fill: none; } .axis { font: 11px var(--font),sans-serif; fill: var(--muted); } polyline { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; } .current { stroke: var(--accent); stroke-width: 3; } .previous { stroke: var(--previous); } .cutoff { stroke: var(--line); stroke-dasharray: 3 4; }
+.explain { margin-top: 23px; } .explain>h2 { margin-bottom: 18px; } .tables { display: grid; grid-template-columns: 1.15fr 1fr; gap: 30px; } table { width: 100%; border-collapse: collapse; font-size: 13px; } th,td { padding: 12px 0; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; } th:first-child { text-align: left; padding-right: 12px; } thead th { font-size: 11px; color: var(--muted); font-weight: 500; } tbody th { font-weight: 450; } .risk td:last-child { color: var(--risk); font-weight: 650; } .risk span { font-size: 10px; border: 1px solid currentColor; padding: 2px 4px; margin-left: 5px; } footer { margin-top: 18px; font-size: 11px; color: var(--muted); }
+body { --font: 'Barlow'; --paper: #E7E5DF; --ink: #1A1D21; --accent: #1D3F66; --previous: #9A9891; --line: #1d3f6659; --muted: #4F555D; --risk: #D9531E; }
+header { background: #1D3F66; color: white; } header select { border-color: #ffffff70; } .period { background: #F2C230; border-color: #F2C230; font-weight: 600; }
+.metrics { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); } .metric { padding: 17px 24px 18px 0; } .metric+ .metric { border-left: 1px solid var(--line); padding-left: 24px; padding-right: 0; }
+.location { display: flex; align-items: center; background: white; height: 43px; } .location b { height: 100%; display: flex; align-items: center; padding: 0 13px; background: #F2C230; font: 600 20px 'Barlow Condensed',sans-serif; } .location h2 { padding-left: 15px; } .location small { margin-left: auto; padding-right: 12px; font: 500 12px 'Barlow Condensed',sans-serif; }
+.value { font-size: 88px; line-height: 1.1; font-weight: 500; text-align: right; letter-spacing: -3px; margin: 8px 0; } .metric .comparison,.coverage { text-align: right; } .coverage { font: 500 14px 'Barlow Condensed',sans-serif; text-transform: uppercase; } .rate { font-size: 24px; } .tables>section+section { border-left: 1px solid var(--line); padding-left: 24px; } .risk span { color: #913512; } .risk { background: #D9531E0D; }
+svg { height: 155px; } .explain { margin-top: 15px; } .explain>h2 { margin-bottom: 12px; } th,td { padding-top: 7px; padding-bottom: 7px; } .metrics { margin-bottom: 18px; } footer { margin-top: 12px; } .risk span { font-size: 11px; }
+</style>
+</head>
+<body>
+<header><div class="brand">DecisionOS</div><nav aria-label="Navegación principal"><a href="#inicio" aria-current="page">Inicio</a><a href="#ventas">Ventas</a><a href="#margen">Margen</a><a href="#importaciones">Importaciones</a><a href="#catalogo">Catálogo</a></nav><label class="org"><select aria-label="Organización activa"><option>Distribuidora del Bajío</option></select></label></header>
+<main id="inicio">
+<div class="page-head"><div><h1>Resumen ejecutivo</h1><p class="muted">1–13 nov 2026 vs. 1–13 oct 2026</p></div><select class="period" aria-label="Periodo"><option>Mes en curso vs. anterior</option></select></div>
+<div class="metrics">
+<section class="metric" id="ventas"><div class="location"><b>VTA · NOV</b><h2>Ventas netas</h2><small>1–13 NOV 2026</small></div><p class="value">$1,284,530.00</p><p class="comparison"><span class="change">+12.3 %</span> frente a $1,143,820.00</p><p class="coverage">Periodo: 1–13 nov 2026 · Ventas registradas</p></section>
+<section class="metric" id="margen"><div class="location"><b>MGN · NOV</b><h2>Margen bruto</h2><small>1–13 NOV 2026</small></div><p class="value">$398,204.00 <span class="rate">· 31.0 %</span></p><p class="comparison"><span class="change">−1.8 pts</span> frente al periodo anterior</p><p class="coverage">Cobertura: 83 % de las líneas con costo</p></section>
+</div>
+<section class="chart" aria-label="Ventas por día"><div class="chart-head"><h2>Ventas diarias</h2><div class="legend"><span>Noviembre · hasta el día 13</span><span>Octubre · mes completo</span></div></div>
+<svg viewBox="0 0 1040 245" role="img" aria-labelledby="chart-title chart-desc">
+<title id="chart-title">Ventas diarias de noviembre y octubre</title><desc id="chart-desc">Datos sintéticos; noviembre tiene 13 puntos y octubre 31. La curva actual termina el día 13.</desc>
+<g class="grid"><path d="M65 45H995 M65 95H995 M65 145H995 M65 195H995"/></g>
+<g class="axis"><text x="0" y="49">$120 mil</text><text x="8" y="99">$80 mil</text><text x="8" y="149">$40 mil</text><text x="31" y="199">$0</text><text x="60" y="226">01</text><text x="246" y="226">07</text><text x="431" y="226">13</text><text x="648" y="226">20</text><text x="987" y="226">31</text></g>
+<path d="M437 28V201" class="cutoff"/><polyline class="previous" points="65,100 96,91.25 127,106.25 158,77.5 189,92.5 220,81.25 251,85 282,66.25 313,96.25 344,73.75 375,58.75 406,88.75 437,87.85 468,75 499,83.75 530,67.5 561,72.5 592,100 623,60 654,77.5 685,68.75 716,86.25 747,56.25 778,71.25 809,91.25 840,73.75 871,58.75 902,80 933,65 964,72.5 995,53.75"/><polyline class="current" points="65,93.75 96,76.25 127,105 158,57.5 189,85 220,66.25 251,73.75 282,55 313,83.75 344,63.75 375,46.25 406,68.75 437,54.337500000000006"/>
+<circle cx="437" cy="54.337500000000006" r="4" fill="var(--accent)"/>
+</svg>
+</section>
+<section class="explain"><h2>Qué explica el cambio</h2><div class="tables">
+<section><h3>Productos que más mueven la venta</h3><table><thead><tr><th scope="col">Producto</th><th scope="col">Cambio en venta</th><th scope="col">Margen</th></tr></thead><tbody>
+<tr><th scope="row">Aceite vegetal 20 L</th><td>+$84,200.00</td><td>24.6 %</td></tr>
+<tr><th scope="row">Detergente industrial 10 kg</th><td>+$41,950.00</td><td>36.8 %</td></tr>
+<tr class="risk"><th scope="row">Azúcar estándar 50 kg</th><td>−$22,310.00</td><td>−2.4 % <span>Riesgo</span></td></tr>
+<tr><th scope="row">Harina de trigo 44 kg</th><td>−$9,870.00</td><td>18.2 %</td></tr>
+</tbody></table></section>
+<section><h3>Clientes</h3><table><thead><tr><th scope="col">Cliente</th><th scope="col">Cambio en venta</th></tr></thead><tbody>
+<tr><th scope="row">Abarrotes La Esperanza</th><td>+$52,400.00</td></tr>
+<tr><th scope="row">Cremería San Juan</th><td>+$18,730.00</td></tr>
+<tr><th scope="row">Tienda Don Pepe</th><td>−$14,200.00</td></tr>
+<tr><th scope="row">Mini súper El Faro</th><td>−$6,050.00</td></tr>
+</tbody></table></section>
+</div></section>
+<footer>Distribuidora del Bajío · Organización de ejemplo · Datos sintéticos · Importes en MXN</footer>
+</main>
+</body>
+</html>
