@@ -16,10 +16,7 @@ export default async function ImportPage({
   const { slug, id } = await params
   const { organization, role, db, item, kind } = await getImport(slug, id)
   const canEdit = role === 'owner' || role === 'admin'
-  const preview =
-    canEdit && item.ok_count > 0
-      ? previewImport(item)
-      : []
+  const preview = canEdit && item.ok_count > 0 ? previewImport(item) : []
   const errors = []
   if (canEdit) {
     for (let offset = 0; ; offset += 1000) {
@@ -83,7 +80,10 @@ export default async function ImportPage({
         </>
       )}
       {canEdit && item.status === 'done' && (
-        <ActionForm action={revertImport} label="Revertir (conserva productos y clientes)">
+        <ActionForm
+          action={revertImport}
+          label="Revertir (conserva productos y clientes)"
+        >
           <input type="hidden" name="organizationId" value={organization.id} />
           <input type="hidden" name="importId" value={id} />
         </ActionForm>
@@ -99,11 +99,19 @@ export default async function ImportPage({
               </caption>
               <thead>
                 <tr>
-                  <th scope="col" className="p-2">
+                  <th scope="col" className="p-2 text-right">
                     Fila
                   </th>
                   {fields[kind].map((field) => (
-                    <th className="p-2" scope="col" key={field.name}>
+                    <th
+                      className={
+                        ['number', 'money', 'quantity'].includes(field.type)
+                          ? 'p-2 text-right'
+                          : 'p-2'
+                      }
+                      scope="col"
+                      key={field.name}
+                    >
                       {field.label}
                     </th>
                   ))}
@@ -112,11 +120,18 @@ export default async function ImportPage({
               <tbody>
                 {preview.map((row) => (
                   <tr key={row.rowNumber}>
-                    <th scope="row" className="p-2">
+                    <th scope="row" className="p-2 text-right">
                       {row.rowNumber.toLocaleString('es-MX')}
                     </th>
                     {fields[kind].map((field) => (
-                      <td className="p-2" key={field.name}>
+                      <td
+                        className={
+                          ['number', 'money', 'quantity'].includes(field.type)
+                            ? 'p-2 text-right'
+                            : 'p-2'
+                        }
+                        key={field.name}
+                      >
                         {typeof row.data[field.name] === 'boolean'
                           ? row.data[field.name]
                             ? 'Sí'

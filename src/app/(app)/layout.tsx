@@ -16,9 +16,12 @@ export default async function AppLayout({
     )
   return (
     <>
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b pb-4">
-        <span className="break-all">{user.email}</span>
-        <LogoutButton />
+      <header className="app-header">
+        <span className="wordmark">DecisionOS</span>
+        <div className="app-account">
+          <span>{user.email}</span>
+          <LogoutButton />
+        </div>
       </header>
       {children}
     </>

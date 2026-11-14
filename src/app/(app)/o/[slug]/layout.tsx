@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { OrganizationNavigation } from '@/components/organization-navigation'
 import { requireRole } from '@/features/organizations/queries'
 export default async function OrganizationLayout({
   children,
@@ -17,31 +17,13 @@ export default async function OrganizationLayout({
   )
   return (
     <>
-      <nav
-        aria-label="Organización"
-        className="mb-6 flex flex-wrap gap-x-4 gap-y-2"
-      >
-        <Link className="underline" href={'/o/' + slug}>
-          Inicio
-        </Link>
-        <Link className="underline" href={'/o/' + slug + '/imports'}>
-          Importaciones
-        </Link>
-        <Link className="underline" href={'/o/' + slug + '/catalog/products'}>
-          Catálogo
-        </Link>
-        {(role === 'owner' || role === 'admin') && (
-          <Link className="underline" href={'/o/' + slug + '/settings/members'}>
-            Miembros
-          </Link>
-        )}
-        {(role === 'owner' || role === 'admin') && (
-          <Link className="underline" href={'/o/' + slug + '/settings/audit'}>
-            Auditoría
-          </Link>
-        )}
-      </nav>
-      {children}
+      <OrganizationNavigation
+        slug={slug}
+        canManage={role === 'owner' || role === 'admin'}
+      />
+      <main id="main-content" tabIndex={-1} className="work-content">
+        {children}
+      </main>
     </>
   )
 }
