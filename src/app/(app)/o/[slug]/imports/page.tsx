@@ -35,7 +35,7 @@ export default async function ImportsPage({
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Importaciones</h1>
       {(role === 'owner' || role === 'admin') && (
-        <Link className="underline" href={`/o/${slug}/imports/new`}>
+        <Link className="action-button" href={`/o/${slug}/imports/new`}>
           Nueva importación
         </Link>
       )}

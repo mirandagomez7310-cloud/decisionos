@@ -22,6 +22,13 @@ export default async function AppLayout({
           <span>{user.email}</span>
           <LogoutButton />
         </div>
+        <details className="mobile-account">
+          <summary>Cuenta</summary>
+          <div>
+            <p>{user.email}</p>
+            <LogoutButton />
+          </div>
+        </details>
       </header>
       {children}
     </>
