@@ -351,7 +351,12 @@
   text-align: right;
 }
 .dashboard-figure {
-  text-align: right;
+  /* Flex con salto: el porcentaje de margen va junto a la cifra y solo baja si no cabe. */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: baseline;
+  column-gap: 0.3em;
   white-space: nowrap;
   font-size: clamp(48px, 13cqi, 88px);
   font-weight: 500;
@@ -360,7 +365,6 @@
   padding-block: 12px;
 }
 .margin-rate {
-  display: block;
   font-size: 24px;
   letter-spacing: 0;
 }
