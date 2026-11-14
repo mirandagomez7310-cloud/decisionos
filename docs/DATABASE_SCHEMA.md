@@ -149,25 +149,25 @@ Las alertas son insights con `severity in ('warning','critical')`; el envío se 
 
 ## Métricas en SQL
 
-Implementadas en `20261114000000_metrics.sql` (0004). Vista `sale_lines_enriched with (security_invoker = true)`: l?neas con `sold_on`, `status` y `customer_id`, unidas a ventas por la FK compuesta. SELECT solo para authenticated.
+Implementadas en `20261114000000_metrics.sql` (0004). Vista `sale_lines_enriched with (security_invoker = true)`: líneas con `sold_on`, `status` y `customer_id`, unidas a ventas por la FK compuesta. SELECT solo para authenticated.
 
-RPC SQL stable, security invoker, search_path vac?o y EXECUTE solo para authenticated (revocado a public y anon). Todas filtran la organizaci?n solicitada y ventas completed; RLS limita los datos al usuario.
+RPC SQL stable, security invoker, search_path vacío y EXECUTE solo para authenticated (revocado a public y anon). Todas filtran la organización solicitada y ventas completed; RLS limita los datos al usuario.
 
 - `metrics_summary(p_organization_id uuid, p_from date, p_to date, p_prev_from date, p_prev_to date)`: una fila con net_sales, prev_net_sales, net_sales_change_pct, sales_count (cabeceras), gross_margin, margin_base, margin_pct, prev_margin_pct, margin_pct_change_pts y coverage.
-- `metrics_daily_sales(p_organization_id uuid, p_from date, p_to date)`: day y net_sales, un d?a por fila del rango inclusivo mediante generate_series, con cero sin ventas.
-- `metrics_by_product` y `metrics_by_customer`: mismos cinco par?metros del resumen; devuelven tablas compatibles con order/range de PostgREST. Incluyen entidades con ventas en cualquiera de los periodos: product_id/sku/name o customer_id/code/name, net_sales, prev_net_sales, delta, delta_pct, gross_margin, margin_pct y coverage.
+- `metrics_daily_sales(p_organization_id uuid, p_from date, p_to date)`: day y net_sales, un día por fila del rango inclusivo mediante generate_series, con cero sin ventas.
+- `metrics_by_product` y `metrics_by_customer`: mismos cinco parámetros del resumen; devuelven tablas compatibles con order/range de PostgREST. Incluyen entidades con ventas en cualquiera de los periodos: product_id/sku/name o customer_id/code/name, net_sales, prev_net_sales, delta, delta_pct, gross_margin, margin_pct y coverage.
 
 Todos los importes y cocientes se calculan con numeric en SQL, nunca en TypeScript:
 
 - Venta neta: sum(sale_lines.line_total) de ventas completed con sold_on en el rango inclusivo; cancelled y returned no cuentan.
-- Base de margen: venta neta de las l?neas con unit_cost no nulo.
-- Margen bruto: sum(line_total - quantity * unit_cost) de esas l?neas, redondeado a 2 decimales.
+- Base de margen: venta neta de las líneas con unit_cost no nulo.
+- Margen bruto: sum(line_total - quantity * unit_cost) de esas líneas, redondeado a 2 decimales.
 - Margen %: margen bruto / base de margen * 100, a 1 decimal; null si la base es cero.
 - Cobertura: base de margen / venta neta * 100, a 1 decimal; null si la venta neta es cero.
-- Variaci?n %: (actual - anterior) / anterior * 100, a 1 decimal; null si anterior es cero (sin comparaci?n).
-- Variaci?n de margen en puntos: margen_pct_actual - margen_pct_anterior, a 1 decimal; null si falta alguno.
+- Variación %: (actual - anterior) / anterior * 100, a 1 decimal; null si anterior es cero (sin comparación).
+- Variación de margen en puntos: margen_pct_actual - margen_pct_anterior, a 1 decimal; null si falta alguno.
 
-Los agregados sin datos devuelven importes y conteos cero, con porcentajes null. Los periodos de aplicaci?n se resuelven en TS puro, con fecha local America/Mexico_City.
+Los agregados sin datos devuelven importes y conteos cero, con porcentajes null. Los periodos de aplicación se resuelven en TS puro, con fecha local America/Mexico_City.
 
 ## Tests pgTAP (uno por tabla, `supabase/tests/<tabla>_rls.test.sql`)
 
@@ -183,7 +183,7 @@ Los agregados sin datos devuelven importes y conteos cero, con porcentajes null.
 1. `0001_core`: `org_role`, `organizations`, `memberships`, `invitations`, `audit_log`, funciones `my_org_ids`, `my_org_ids_with_role`, `create_organization`, `accept_invitation`, triggers de `updated_at`, último owner y auditoría, políticas, permisos mínimos y tests.
 2. `0002_business`: `products`, `customers`, `sales`, `sale_lines`, `inventory_snapshots`, `receivables`.
 3. `0003_imports_jobs`: `imports`, `import_rows`, `jobs`, bucket privado `imports` con sus políticas en `storage.objects` y test cruzado.
-4. `0004_metrics_views`: vistas de métricas.
+4. `0004_metrics_views`: escrita en `20261114000000_metrics.sql`; vista y RPC de métricas.
 5. `0005_insights`: `insight_kind`, `insights`. (`alert_deliveries` y `alert_rules` se diseñan en la fase 5, en una migración propia.)
 
 ## Reversión de importaciones

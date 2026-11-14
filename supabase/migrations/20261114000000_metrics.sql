@@ -35,9 +35,7 @@ language sql stable security invoker set search_path = '' as $$
 with totals as (select product_id, coalesce(sum(line_total) filter (where sold_on between p_from and p_to),0) as net,
 coalesce(sum(line_total) filter (where sold_on between p_prev_from and p_prev_to),0) as prev,
 coalesce(sum(line_total) filter (where sold_on between p_from and p_to and unit_cost is not null),0) as base,
-sum(line_total) filter (where sold_on between p_prev_from and p_prev_to and unit_cost is not null) as prev_base,
-round(coalesce(sum(line_total-quantity*unit_cost) filter (where sold_on between p_from and p_to),0),2) as margin,
-round(sum(line_total-quantity*unit_cost) filter (where sold_on between p_prev_from and p_prev_to),2) as prev_margin from public.sale_lines_enriched where organization_id=p_organization_id and status='completed'
+round(coalesce(sum(line_total-quantity*unit_cost) filter (where sold_on between p_from and p_to),0),2) as margin from public.sale_lines_enriched where organization_id=p_organization_id and status='completed'
 and (sold_on between p_from and p_to or sold_on between p_prev_from and p_prev_to) group by product_id)
 select t.product_id, c.sku, c.name, net, prev, net-prev, round((net-prev)/nullif(prev,0)*100,1),
 margin, round(margin/nullif(base,0)*100,1), round(base/nullif(net,0)*100,1)
@@ -51,9 +49,7 @@ language sql stable security invoker set search_path = '' as $$
 with totals as (select customer_id, coalesce(sum(line_total) filter (where sold_on between p_from and p_to),0) as net,
 coalesce(sum(line_total) filter (where sold_on between p_prev_from and p_prev_to),0) as prev,
 coalesce(sum(line_total) filter (where sold_on between p_from and p_to and unit_cost is not null),0) as base,
-sum(line_total) filter (where sold_on between p_prev_from and p_prev_to and unit_cost is not null) as prev_base,
-round(coalesce(sum(line_total-quantity*unit_cost) filter (where sold_on between p_from and p_to),0),2) as margin,
-round(sum(line_total-quantity*unit_cost) filter (where sold_on between p_prev_from and p_prev_to),2) as prev_margin from public.sale_lines_enriched where organization_id=p_organization_id and status='completed'
+round(coalesce(sum(line_total-quantity*unit_cost) filter (where sold_on between p_from and p_to),0),2) as margin from public.sale_lines_enriched where organization_id=p_organization_id and status='completed'
 and (sold_on between p_from and p_to or sold_on between p_prev_from and p_prev_to) group by customer_id)
 select t.customer_id, c.code, c.name, net, prev, net-prev, round((net-prev)/nullif(prev,0)*100,1),
 margin, round(margin/nullif(base,0)*100,1), round(base/nullif(net,0)*100,1)
