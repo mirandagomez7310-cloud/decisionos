@@ -12,6 +12,7 @@ export function PeriodSelect({ value }: { value: string }) {
         onChange={(event) => {
           const params = new URLSearchParams(search.toString())
           params.set('periodo', event.target.value)
+          params.delete('pagina')
           router.push(`${pathname}?${params}`, { scroll: false })
         }}
       >

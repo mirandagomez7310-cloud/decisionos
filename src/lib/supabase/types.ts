@@ -13,6 +13,13 @@ export type MetricMovement = {
   delta: number
   margin_pct: number | null
 }
+export type MetricAnalysis = MetricMovement & {
+  net_sales: number
+  prev_net_sales: number
+  delta_pct: number | null
+  gross_margin: number
+  coverage: number | null
+}
 export type MetricSummary = {
   net_sales: number
   prev_net_sales: number
@@ -36,11 +43,11 @@ export type Database = GeneratedDatabase & {
       }
       metrics_by_product: {
         Args: PeriodArgs
-        Returns: (MetricMovement & { product_id: string })[]
+        Returns: (MetricAnalysis & { product_id: string; sku: string })[]
       }
       metrics_by_customer: {
         Args: PeriodArgs
-        Returns: (MetricMovement & { customer_id: string })[]
+        Returns: (MetricAnalysis & { customer_id: string; code: string })[]
       }
     }
   }

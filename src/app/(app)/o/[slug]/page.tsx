@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getDashboard } from '@/features/dashboard/queries'
+import { EmptySales } from '@/features/dashboard/empty-sales'
 import { PeriodSelect } from '@/features/dashboard/period-select'
 import { LocationTag } from '@/components/location-tag'
 import { LineChart } from '@/components/charts/line-chart'
@@ -17,16 +18,20 @@ function Movements({
   title,
   rows,
   products = false,
+  slug,
+  period,
 }: {
   title: string
   rows: MetricMovement[]
   products?: boolean
+  slug: string
+  period: string
 }) {
   return (
     <section>
       <h3>{title}</h3>
       {rows.length ? (
-        <table>
+        <table className="metrics-table">
           <thead>
             <tr>
               <th scope="col">{products ? 'Producto' : 'Cliente'}</th>
@@ -37,7 +42,14 @@ function Movements({
           <tbody>
             {rows.map((row, index) => (
               <tr key={index}>
-                <th scope="row">{row.name}</th>
+                <th scope="row">
+                  <Link
+                    className="underline"
+                    href={`/o/${slug}/${products ? 'margin' : 'sales'}?${new URLSearchParams({ vista: products ? 'productos' : 'clientes', periodo: period, q: row.name })}#fila-${'product_id' in row ? row.product_id : 'customer_id' in row ? row.customer_id : ''}`}
+                  >
+                    {row.name}
+                  </Link>
+                </th>
                 <td>{formatMoneyChange(row.delta)}</td>
                 {products && (
                   <td
@@ -103,21 +115,7 @@ export default async function Page({
     return (
       <>
         {heading}
-        <section className="dashboard-empty">
-          <h2>Aún no hay datos</h2>
-          <p>
-            Importa ventas en CSV o Excel con folio, fecha, cliente, producto,
-            cantidad y precio. El costo es opcional y permite calcular el
-            margen.
-          </p>
-          {data.role === 'owner' || data.role === 'admin' ? (
-            <Link className="action-button" href={`/o/${slug}/imports/new`}>
-              Importar ventas
-            </Link>
-          ) : (
-            <p>Pide a un propietario o administrador que importe las ventas.</p>
-          )}
-        </section>
+        <EmptySales slug={slug} role={data.role} />
       </>
     )
   const s = data.summary
@@ -213,9 +211,16 @@ export default async function Page({
           <Movements
             title="Productos que más mueven la venta"
             rows={data.products}
+            slug={slug}
+            period={data.kind}
             products
           />
-          <Movements title="Clientes" rows={data.customers} />
+          <Movements
+            title="Clientes"
+            rows={data.customers}
+            slug={slug}
+            period={data.kind}
+          />
         </div>
       </section>
       <footer className="dashboard-footer">
