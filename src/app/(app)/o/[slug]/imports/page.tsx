@@ -35,7 +35,7 @@ export default async function ImportsPage({
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Importaciones</h1>
       {(role === 'owner' || role === 'admin') && (
-        <Link className="underline" href={`/o/${slug}/imports/new`}>
+        <Link className="action-button" href={`/o/${slug}/imports/new`}>
           Nueva importación
         </Link>
       )}
@@ -55,7 +55,13 @@ export default async function ImportsPage({
                 'Fecha',
                 'Detalle',
               ].map((label) => (
-                <th className="p-2" scope="col" key={label}>
+                <th
+                  className={
+                    label.startsWith('Filas') ? 'p-2 text-right' : 'p-2'
+                  }
+                  scope="col"
+                  key={label}
+                >
                   {label}
                 </th>
               ))}
@@ -69,8 +75,10 @@ export default async function ImportsPage({
                 </td>
                 <td className="p-2">{row.original_filename}</td>
                 <td className="p-2">{statusLabels[row.status]}</td>
-                <td className="p-2">{row.ok_count.toLocaleString('es-MX')}</td>
-                <td className="p-2">
+                <td className="p-2 text-right">
+                  {row.ok_count.toLocaleString('es-MX')}
+                </td>
+                <td className="p-2 text-right">
                   {row.error_count.toLocaleString('es-MX')}
                 </td>
                 <td className="p-2">
