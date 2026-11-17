@@ -23,6 +23,7 @@ export function OrganizationNavigation({
     ['Inicio', '', ''],
     ['Ventas', '/sales', '/sales'],
     ['Margen', '/margin', '/margin'],
+    ['Inventario', '/inventory', '/inventory'],
     ['Importaciones', '/imports', '/imports'],
     ['Catálogo', '/catalog/products', '/catalog'],
     ...(canManage

@@ -726,3 +726,17 @@
   height: 24px;
   background: var(--surface);
 }
+
+.inventory-metrics .dashboard-figure {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.inventory-metrics .dashboard-metric:nth-child(n + 3) {
+  border-top: 1px solid var(--upright);
+}
+@media (min-width: 768px) {
+  .inventory-metrics .dashboard-metric:nth-child(3) {
+    border-left: 0;
+    padding: 18px 24px 18px 0;
+  }
+}

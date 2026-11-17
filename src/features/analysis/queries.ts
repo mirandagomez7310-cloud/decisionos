@@ -1,10 +1,10 @@
 import 'server-only'
+import { escapeIlike } from './shared'
 import { requireRole } from '@/lib/server/auth'
 import { createClient } from '@/lib/supabase/server'
 import type { MetricAnalysis } from '@/lib/supabase/types'
 import { resolvePeriod, todayInMexico } from '@/lib/server/metrics/period'
 import {
-  escapeIlike,
   marginOrders,
   salesOrders,
   type AnalysisScreen,

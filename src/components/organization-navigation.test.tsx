@@ -36,5 +36,14 @@ describe('navegación de organización', () => {
       '/o/demo/settings/members',
     )
     expect(screen.getByRole('link', { name: 'Auditoría' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Margen' }).nextElementSibling,
+    ).toBe(screen.getByRole('link', { name: 'Inventario' }))
+    route.pathname = '/o/demo/inventory'
+    rerender(<OrganizationNavigation slug="demo" canManage={false} />)
+    expect(screen.getByRole('link', { name: 'Inventario' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
   })
 })
