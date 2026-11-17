@@ -169,6 +169,24 @@ Todos los importes y cocientes se calculan con numeric en SQL, nunca en TypeScri
 
 Los agregados sin datos devuelven importes y conteos cero, con porcentajes null. Los periodos de aplicación se resuelven en TS puro, con fecha local America/Mexico_City.
 
+### Inventario y cobranza (fase 4)
+
+Las cuatro RPC de `20261118000000_inventory_cash_metrics.sql` reciben `p_organization_id uuid` y `p_as_of date`. La aplicación obtiene el corte con `todayInMexico`. Conservan el filtrado por organización, RLS y ejecución solo para `authenticated`. Los desgloses admiten `.order()` y `.range()` de PostgREST.
+
+- `inventory_summary` devuelve `snapshot_on`, `inventory_value`, `value_coverage`, `cogs_90d`, `days_on_hand`, `turnover`, `stale_value`, `stale_count` y `product_count`.
+- `inventory_by_product` devuelve `product_id`, `sku`, `name`, `quantity`, `unit_cost`, `inventory_value`, `cogs_90d`, `days_on_hand`, `last_sold_on`, `days_since_sale` e `is_stale`.
+
+Se usa la última fecha de existencias de la organización hasta el corte. Solo entran productos presentes ese día con cantidad positiva. El costo unitario del snapshot tiene prioridad sobre el costo estándar. El valor suma cantidad por costo conocido y redondea a 2 decimales. En el desglose, el valor es nulo cuando falta el costo. La cobertura es el porcentaje de filas de cantidad positiva con costo conocido, a 1 decimal y nulo si no hay filas.
+
+El costo vendido suma cantidad por costo de línea conocido en ventas `completed` desde el corte menos 89 días hasta el corte, ambos inclusive. El resumen incluye el costo vendido de toda la organización si existe un snapshot. Los días de inventario son valor × 90 / costo vendido y son nulos si el costo es cero o negativo. La rotación anual es costo vendido × 365 / 90 / valor y es nula si el valor es cero. Ambos indicadores se redondean a 1 decimal. Un producto está sin movimiento si no tiene ventas completadas en esa ventana, aunque sus líneas carezcan de costo. La última venta completada hasta el corte y los días desde esa venta son nulos si nunca se vendió hasta entonces.
+
+- `receivables_summary` devuelve `open_balance`, `overdue_balance`, `overdue_pct`, `current_balance`, `d1_30`, `d31_60`, `d61_90`, `d90_plus`, `customer_count` y `top5_share_pct`.
+- `receivables_by_customer` devuelve `customer_id`, `code`, `name`, `open_balance`, `overdue_balance`, `current_balance`, `d1_30`, `d31_60`, `d61_90`, `d90_plus`, `max_days_overdue`, `credit_limit`, `credit_used_pct`, `share_pct` y `risk`.
+
+El saldo es importe menos pagos y solo incluye cuentas emitidas hasta el corte con saldo positivo. Los días vencidos son el corte menos el vencimiento. Los tramos son por vencer (≤ 0), 1–30, 31–60, 61–90 y más de 90. El máximo de días vencidos es cero si el cliente no tiene saldo vencido. La concentración divide el saldo del cliente, o la suma de los cinco mayores saldos en el resumen, entre el saldo abierto total. El uso de crédito divide el saldo del cliente entre su límite y es nulo si el límite falta o es cero. Los porcentajes se redondean a 1 decimal. El riesgo es `alto` con saldo a más de 90 días o uso real de crédito superior al 100 %, `medio` con saldo a más de 30 días y `bajo` en los demás casos.
+
+Sin snapshot o sin cuentas abiertas, el desglose correspondiente queda vacío. El resumen devuelve importes y conteos en cero, con fecha, ratios y porcentajes nulos según corresponda. Todos los cálculos se hacen en SQL con `numeric`.
+
 ## Tests pgTAP (uno por tabla, `supabase/tests/<tabla>_rls.test.sql`)
 
 1. `anon` no lee ni escribe.

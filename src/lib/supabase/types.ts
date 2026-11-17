@@ -32,10 +32,63 @@ export type MetricSummary = {
   margin_pct_change_pts: number | null
   coverage: number | null
 }
-// Firmas de la migración de métricas; regenerar cuando se actualicen los tipos locales.
+type AsOfArgs = { p_organization_id: string; p_as_of: string }
+type InventorySummary = {
+  snapshot_on: string | null
+  inventory_value: number
+  value_coverage: number | null
+  cogs_90d: number
+  days_on_hand: number | null
+  turnover: number | null
+  stale_value: number
+  stale_count: number
+  product_count: number
+}
+type InventoryProduct = {
+  product_id: string
+  sku: string
+  name: string
+  quantity: number
+  unit_cost: number | null
+  inventory_value: number | null
+  cogs_90d: number
+  days_on_hand: number | null
+  last_sold_on: string | null
+  days_since_sale: number | null
+  is_stale: boolean
+}
+type ReceivablesBalances = {
+  open_balance: number
+  overdue_balance: number
+  current_balance: number
+  d1_30: number
+  d31_60: number
+  d61_90: number
+  d90_plus: number
+}
+type ReceivablesSummary = ReceivablesBalances & {
+  overdue_pct: number | null
+  customer_count: number
+  top5_share_pct: number | null
+}
+type ReceivablesCustomer = ReceivablesBalances & {
+  customer_id: string
+  code: string
+  name: string
+  max_days_overdue: number
+  credit_limit: number | null
+  credit_used_pct: number | null
+  share_pct: number
+  risk: 'alto' | 'medio' | 'bajo'
+}
+// Firmas de las migraciones de métricas. Regenerar al actualizar los tipos locales.
 export type Database = GeneratedDatabase & {
   public: {
     Functions: {
+      inventory_summary: { Args: AsOfArgs; Returns: InventorySummary[] }
+      inventory_by_product: { Args: AsOfArgs; Returns: InventoryProduct[] }
+      receivables_summary: { Args: AsOfArgs; Returns: ReceivablesSummary[] }
+      receivables_by_customer: { Args: AsOfArgs; Returns: ReceivablesCustomer[] }
       metrics_summary: { Args: PeriodArgs; Returns: MetricSummary[] }
       metrics_daily_sales: {
         Args: Omit<PeriodArgs, 'p_prev_from' | 'p_prev_to'>
