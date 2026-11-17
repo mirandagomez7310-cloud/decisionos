@@ -35,7 +35,7 @@ $$;
 create function public.inventory_summary(p_organization_id uuid, p_as_of date)
 returns table (
   snapshot_on date, inventory_value numeric, value_coverage numeric, cogs_90d numeric,
-  days_on_hand numeric, turnover numeric, stale_value numeric, stale_count bigint, product_count bigint
+  days_on_hand numeric, turnover numeric, stale_value numeric, stale_share_pct numeric, stale_count bigint, product_count bigint
 )
 language sql stable security invoker set search_path = '' as $$
 with snapshot as (
@@ -58,7 +58,7 @@ with snapshot as (
 select stock_on, value, coverage, round(cost, 2),
   case when cost > 0 then round(value * 90 / cost, 1) end,
   round(cost * 365 / (90 * nullif(value, 0)), 1),
-  stale, stale_count, products
+  stale, round(stale * 100 / nullif(value, 0), 1), stale_count, products
 from snapshot cross join stock cross join costs;
 $$;
 

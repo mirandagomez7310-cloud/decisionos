@@ -41,6 +41,7 @@ type InventorySummary = {
   days_on_hand: number | null
   turnover: number | null
   stale_value: number
+  stale_share_pct: number | null
   stale_count: number
   product_count: number
 }

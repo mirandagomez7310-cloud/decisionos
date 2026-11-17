@@ -66,7 +66,7 @@ set local request.jwt.claims = '{"sub":"41000000-0000-0000-0000-000000000003","r
 
 select results_eq(
   $$select * from public.inventory_summary('41000000-0000-0000-0000-000000000001', '2026-11-18')$$::text,
-  $$values (date '2026-11-18' - 1, 8.47::numeric, 66.7::numeric, .26::numeric, 2969.6::numeric, .1::numeric, 2.47::numeric, 2::bigint, 3::bigint)$$::text,
+  $$values (date '2026-11-18' - 1, 8.47::numeric, 66.7::numeric, .26::numeric, 2969.6::numeric, .1::numeric, 2.47::numeric, 29.2::numeric, 2::bigint, 3::bigint)$$::text,
   'Inventario: corte global, cobertura, costo exacto, días y rotación'
 );
 select results_eq(
@@ -96,7 +96,7 @@ select results_eq(
 );
 select results_eq(
   $$select * from public.inventory_summary('41000000-0000-0000-0000-000000000001', '2025-01-01')$$::text,
-  $$values (null::date, 0::numeric, null::numeric, 0::numeric, null::numeric, null::numeric, 0::numeric, 0::bigint, 0::bigint)$$::text,
+  $$values (null::date, 0::numeric, null::numeric, 0::numeric, null::numeric, null::numeric, 0::numeric, null::numeric, 0::bigint, 0::bigint)$$::text,
   'A sin datos al corte: resumen de inventario'
 );
 select results_eq(
@@ -108,7 +108,7 @@ select is_empty($$select * from public.inventory_by_product('41000000-0000-0000-
 select is_empty($$select * from public.receivables_by_customer('41000000-0000-0000-0000-000000000001', '2025-01-01')$$::text, 'A sin datos al corte: receivables_by_customer vacío');
 select results_eq(
   $$select * from public.inventory_summary('41000000-0000-0000-0000-000000000002', '2026-11-18')$$::text,
-  $$values (null::date, 0::numeric, null::numeric, 0::numeric, null::numeric, null::numeric, 0::numeric, 0::bigint, 0::bigint)$$::text,
+  $$values (null::date, 0::numeric, null::numeric, 0::numeric, null::numeric, null::numeric, 0::numeric, null::numeric, 0::bigint, 0::bigint)$$::text,
   'B oculta por RLS: resumen de inventario'
 );
 select results_eq(

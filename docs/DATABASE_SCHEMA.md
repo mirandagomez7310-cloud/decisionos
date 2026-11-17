@@ -173,7 +173,7 @@ Los agregados sin datos devuelven importes y conteos cero, con porcentajes null.
 
 Las cuatro RPC de `20261118000000_inventory_cash_metrics.sql` reciben `p_organization_id uuid` y `p_as_of date`. La aplicación obtiene el corte con `todayInMexico`. Conservan el filtrado por organización, RLS y ejecución solo para `authenticated`. Los desgloses admiten `.order()` y `.range()` de PostgREST.
 
-- `inventory_summary` devuelve `snapshot_on`, `inventory_value`, `value_coverage`, `cogs_90d`, `days_on_hand`, `turnover`, `stale_value`, `stale_count` y `product_count`.
+- `inventory_summary` devuelve `snapshot_on`, `inventory_value`, `value_coverage`, `cogs_90d`, `days_on_hand`, `turnover`, `stale_value`, `stale_share_pct` (parte del valor sin movimiento, 1 decimal), `stale_count` y `product_count`.
 - `inventory_by_product` devuelve `product_id`, `sku`, `name`, `quantity`, `unit_cost`, `inventory_value`, `cogs_90d`, `days_on_hand`, `last_sold_on`, `days_since_sale` e `is_stale`.
 
 Se usa la última fecha de existencias de la organización hasta el corte. Solo entran productos presentes ese día con cantidad positiva. El costo unitario del snapshot tiene prioridad sobre el costo estándar. El valor suma cantidad por costo conocido y redondea a 2 decimales. En el desglose, el valor es nulo cuando falta el costo. La cobertura es el porcentaje de filas de cantidad positiva con costo conocido, a 1 decimal y nulo si no hay filas.
