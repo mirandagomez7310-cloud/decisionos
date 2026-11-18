@@ -24,6 +24,7 @@ export function OrganizationNavigation({
     ['Ventas', '/sales', '/sales'],
     ['Margen', '/margin', '/margin'],
     ['Inventario', '/inventory', '/inventory'],
+    ['Cobranza', '/receivables', '/receivables'],
     ['Importaciones', '/imports', '/imports'],
     ['Catálogo', '/catalog/products', '/catalog'],
     ...(canManage

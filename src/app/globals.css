@@ -707,6 +707,12 @@
   border-inline-end: 1px solid var(--upright);
   padding: 12px;
 }
+/* Los importes no se parten: la región ya desplaza en horizontal. */
+.analysis-table td,
+.receivables-aging td,
+.receivables-aging th {
+  white-space: nowrap;
+}
 .analysis-table th:first-child {
   position: sticky;
   left: 0;
@@ -727,9 +733,19 @@
   background: var(--surface);
 }
 
-.inventory-metrics .dashboard-figure {
+.inventory-metrics .dashboard-figure,
+.receivables-metrics .dashboard-figure {
   white-space: normal;
   overflow-wrap: anywhere;
+}
+.receivables-aging {
+  margin-block: 24px;
+}
+.receivables-aging caption {
+  text-align: left;
+}
+.receivables-aging th:first-child {
+  text-align: right;
 }
 .inventory-metrics .dashboard-metric:nth-child(n + 3) {
   border-top: 1px solid var(--upright);

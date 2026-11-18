@@ -1,5 +1,5 @@
 import 'server-only'
-import { escapeIlike } from '@/features/analysis/shared'
+import { escapeIlike, tablePage } from '@/features/analysis/shared'
 import { requireRole } from '@/lib/server/auth'
 import { todayInMexico } from '@/lib/server/metrics/period'
 import { createClient } from '@/lib/supabase/server'
@@ -34,8 +34,7 @@ export async function getInventory(slug: string, search: InventorySearch) {
 
   const summary = summaryResult.data
   const count = total.count ?? 0
-  const pages = Math.max(1, Math.ceil(count / 50))
-  const page = Math.min(search.pagina, pages)
+  const { pages, page, start, end } = tablePage(count, search.pagina)
   const base = {
     error: false as const,
     summary,
@@ -47,12 +46,11 @@ export async function getInventory(slug: string, search: InventorySearch) {
   }
   if (!count) return { ...base, rows: [] }
 
-  const start = (page - 1) * 50
   const [field, ascending] = inventoryOrders[search.orden]
   const result = await query()
     .order(field, { ascending, nullsFirst: search.orden === 'sin_venta' })
     .order('product_id', { ascending: true, nullsFirst: false })
-    .range(start, start + 49)
+    .range(start, end)
   if (result.error) return { error: true as const }
   return { ...base, rows: result.data }
 }

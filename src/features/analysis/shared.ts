@@ -9,6 +9,13 @@ export const tableSearchFields = {
 }
 export const escapeIlike = (value: string) => value.replace(/[\\%_]/g, '\\$&')
 
+export function tablePage(count: number, requestedPage: number) {
+  const pages = Math.max(1, Math.ceil(count / 50))
+  const page = Math.min(requestedPage, pages)
+  const start = (page - 1) * 50
+  return { pages, page, start, end: start + 49 }
+}
+
 export function tableHref<T extends { pagina: number }>(
   path: string,
   search: T,

@@ -45,5 +45,13 @@ describe('navegación de organización', () => {
       'aria-current',
       'page',
     )
+    const receivables = screen.getByRole('link', { name: 'Cobranza' })
+    expect(
+      screen.getByRole('link', { name: 'Inventario' }).nextElementSibling,
+    ).toBe(receivables)
+    expect(receivables).toHaveAttribute('href', '/o/demo/receivables')
+    route.pathname = '/o/demo/receivables'
+    rerender(<OrganizationNavigation slug="demo" canManage={false} />)
+    expect(receivables).toHaveAttribute('aria-current', 'page')
   })
 })

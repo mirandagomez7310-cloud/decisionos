@@ -76,3 +76,27 @@ export const test = base.extend<{
     }
   },
 })
+
+export async function importCsv(page: Page, path: string, kind: string, csv: string) {
+  const [header, ...rows] = csv.split('\n')
+  await page.goto(path)
+  await page.getByLabel('Tipo de importación').selectOption(kind)
+  await page.getByLabel('Archivo', { exact: true }).setInputFiles({
+    name: `${kind}.csv`,
+    mimeType: 'text/csv',
+    buffer: Buffer.from(csv),
+  })
+  await page.getByRole('button', { name: 'Subir archivo' }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Asignar columnas' }),
+  ).toBeVisible()
+  for (const field of header!.split(','))
+    await page.locator(`[name="mapping.${field}"]`).selectOption(field)
+  await page.getByRole('button', { name: 'Validar filas' }).click()
+  await page
+    .getByRole('button', { name: `Importar ${rows.length} filas válidas` })
+    .click()
+  await expect(
+    page.getByText('Estado: Completado', { exact: true }),
+  ).toBeVisible({ timeout: 60000 })
+}
