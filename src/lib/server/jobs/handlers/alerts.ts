@@ -1,6 +1,6 @@
 import 'server-only'
 import { env } from '@/env'
-import { sendMail } from '@/lib/server/mail'
+import { sendDelivery } from '../deliveries'
 import { alertEmail } from '@/lib/server/mail/templates'
 import type { Database, Insight } from '@/lib/supabase/types'
 import { audit, batches, checked, type Client, type Job } from '../shared'
@@ -68,72 +68,30 @@ export async function handleSendAlerts(db: Client, job: Job) {
       })
       if (!items.length) continue
       const recipient_email = alerts[0]!.recipient_email
-      const deliveries = await checked(
-        db
-          .from('deliveries')
-          .upsert(
-            items.map(({ id }) => ({
-              organization_id,
-              kind: 'alert',
-              dedupe_key: `alert:${id}:${recipient_user_id}`,
-              insight_id: id,
-              recipient_user_id,
-              recipient_email,
-              status: 'pending',
-            })),
-            { onConflict: 'organization_id,dedupe_key' },
-          )
-          .select('id,attempts'),
+      const outcome = await sendDelivery(
+        db,
+        organization_id,
+        items.map(({ id }) => ({
+          kind: 'alert',
+          dedupe_key: `alert:${id}:${recipient_user_id}`,
+          insight_id: id,
+          recipient_user_id,
+          recipient_email,
+        })),
+        {
+          to: recipient_email,
+          ...alertEmail({
+            organizationName: organization.name,
+            appUrl: env.APP_URL,
+            slug: organization.slug,
+            insights: items,
+          }),
+        },
       )
-      if (deliveries?.length !== items.length)
-        throw new Error('No se pudieron preparar todas las entregas')
-
       counts.recipients++
       for (const { id } of items) included.add(id)
-      const result = await sendMail({
-        to: recipient_email,
-        ...alertEmail({
-          organizationName: organization.name,
-          appUrl: env.APP_URL,
-          slug: organization.slug,
-          insights: items,
-        }),
-      })
-      if (result.ok) {
-        const sent_at = new Date().toISOString()
-        await checked(
-          db
-            .from('deliveries')
-            .update({ status: 'sent', sent_at, last_error: null })
-            .eq('organization_id', organization_id)
-            .in(
-              'id',
-              deliveries.map(({ id }) => id),
-            ),
-        )
-      } else if (result.error === 'mail-disabled') {
-        disabled++
-      } else {
-        counts.failed++
-        for (const attempts of new Set(deliveries.map((row) => row.attempts))) {
-          await checked(
-            db
-              .from('deliveries')
-              .update({
-                status: 'failed',
-                attempts: attempts + 1,
-                last_error: result.error,
-              })
-              .eq('organization_id', organization_id)
-              .in(
-                'id',
-                deliveries
-                  .filter((row) => row.attempts === attempts)
-                  .map(({ id }) => id),
-              ),
-          )
-        }
-      }
+      if (outcome === 'disabled') disabled++
+      if (outcome === 'failed') counts.failed++
     }
     counts.insights = included.size
   }

@@ -187,6 +187,7 @@ export type Database = GeneratedDatabase & {
         Args: { p_insight_id: string; p_status: Insight['status'] }
         Returns: Insight
       }
+      enqueue_weekly_reports: { Args: never; Returns: number }
       enqueue_daily_insights: { Args: never; Returns: number }
       enqueue_insights: { Args: { p_organization_id: string }; Returns: boolean }
       inventory_summary: { Args: AsOfArgs; Returns: InventorySummary[] }

@@ -20,7 +20,9 @@ test('owner recibe alertas agrupadas una sola vez al recalcular', async ({
     const { messages } = (await response.json()) as {
       messages: { ID: string; Subject: string }[] | null
     }
-    return messages ?? []
+    return (messages ?? []).filter(({ Subject }) =>
+      /^DecisionOS · \d+ alertas? nuevas? en /.test(Subject),
+    )
   }
 
   const db = adminClient()

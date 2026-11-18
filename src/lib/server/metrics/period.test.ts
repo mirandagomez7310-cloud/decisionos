@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { periodSchema, resolvePeriod, todayInMexico } from './period'
+import {
+  periodSchema,
+  resolvePeriod,
+  resolveWeek,
+  todayInMexico,
+} from './period'
 
 describe('periods', () => {
   it('mtd 2026-01-01', () => {
@@ -94,3 +99,13 @@ describe('periods', () => {
     expect(periodSchema.safeParse('year').success).toBe(false)
   })
 })
+
+it.each([
+  ['2026-01-05', '2025-12-29', '2026-01-04', '2025-12-22', '2025-12-28'],
+  ['2024-03-03', '2024-02-25', '2024-03-02', '2024-02-18', '2024-02-24'],
+])(
+  'resuelve los 7 días previos a %s y la semana anterior',
+  (today, from, to, prevFrom, prevTo) => {
+    expect(resolveWeek(today)).toEqual({ from, to, prevFrom, prevTo })
+  },
+)

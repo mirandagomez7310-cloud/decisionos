@@ -5,6 +5,7 @@ import { handleSendAlerts } from './handlers/alerts'
 import { handleImport } from './handlers/import'
 import { handleComputeInsights } from './handlers/insights'
 import { handleRevert } from './handlers/revert'
+import { handleWeeklyReport } from './handlers/weekly-report'
 import { checked, importId, workerClient } from './shared'
 export async function runPendingJobs({ maxJobs = 5, worker = 'web' } = {}) {
   try {
@@ -13,7 +14,13 @@ export async function runPendingJobs({ maxJobs = 5, worker = 'web' } = {}) {
       const job = await checked(
         db.rpc('claim_job', {
           worker,
-          kinds: ['import', 'revert_import', 'compute_insights', 'send_alerts'],
+          kinds: [
+            'import',
+            'revert_import',
+            'compute_insights',
+            'send_alerts',
+            'weekly_report',
+          ],
         }),
       )
       if (!job?.id) break
@@ -23,6 +30,7 @@ export async function runPendingJobs({ maxJobs = 5, worker = 'web' } = {}) {
         else if (job.kind === 'compute_insights')
           await handleComputeInsights(db, job)
         else if (job.kind === 'send_alerts') await handleSendAlerts(db, job)
+        else if (job.kind === 'weekly_report') await handleWeeklyReport(db, job)
         await checked(
           db.rpc('complete_job', {
             id: job.id,
