@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   compute: vi.fn(),
   alerts: vi.fn(),
   weekly: vi.fn(),
+  advisor: vi.fn(),
 }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ rpc: mocks.rpc, from: mocks.from }),
@@ -15,6 +16,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 vi.mock('./handlers/import', () => ({ handleImport: mocks.run }))
 vi.mock('./handlers/revert', () => ({ handleRevert: mocks.revert }))
 vi.mock('./handlers/insights', () => ({ handleComputeInsights: mocks.compute }))
+vi.mock('./handlers/advisor', () => ({ handleAdvisor: mocks.advisor }))
 vi.mock('./handlers/alerts', () => ({ handleSendAlerts: mocks.alerts }))
 vi.mock('./handlers/weekly-report', () => ({
   handleWeeklyReport: mocks.weekly,
@@ -42,6 +44,7 @@ it('despacha, completa y respeta maxJobs', async () => {
       'compute_insights',
       'send_alerts',
       'weekly_report',
+      'advisor',
     ],
   })
   expect(mocks.rpc).toHaveBeenNthCalledWith(2, 'complete_job', {
@@ -54,6 +57,7 @@ it('despacha, completa y respeta maxJobs', async () => {
 it.each([
   ['send_alerts', mocks.alerts],
   ['weekly_report', mocks.weekly],
+  ['advisor', mocks.advisor],
 ])('despacha y completa el job %s', async (kind, handler) => {
   const mailJob = { ...job, kind, payload: {} }
   mocks.rpc

@@ -88,7 +88,7 @@ test('viewer ve el hallazgo sin controles de estado', async ({ page }) => {
     id,
     organization_id: org.id,
     module: 'cash',
-    kind: 'suggestion',
+    kind: 'fact',
     severity: 'warning',
     title,
     body: 'Revisar saldos pendientes.',
@@ -96,7 +96,8 @@ test('viewer ve el hallazgo sin controles de estado', async ({ page }) => {
     metric_snapshot: {},
     period_start: '2026-11-01',
     period_end: '2026-11-17',
-    generated_by: 'llm',
+    rule_key: `test-${id}`,
+    generated_by: 'rule',
   })
   if (error) throw error
   try {

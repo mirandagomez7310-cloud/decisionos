@@ -19,9 +19,10 @@ type WorkerDatabase = Omit<Database, 'public'> & {
   }
 }
 // PostgREST acepta decimales como texto; los tipos generados solo contemplan number.
-export const workerClient = (db: ReturnType<typeof createAdminClient>) =>
-  db as unknown as SupabaseClient<WorkerDatabase>
-export type Client = ReturnType<typeof workerClient>
+export const workerClient = (
+  db: ReturnType<typeof createAdminClient> | Client,
+) => db as unknown as SupabaseClient<WorkerDatabase>
+export type Client = SupabaseClient<WorkerDatabase>
 export type Job = Database['public']['Tables']['jobs']['Row']
 export async function checked<T>(
   query: PromiseLike<{ data: T; error: { message: string } | null }>,

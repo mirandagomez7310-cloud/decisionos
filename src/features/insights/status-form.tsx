@@ -1,7 +1,40 @@
 'use client'
 import { useActionState } from 'react'
 import { submitInsightStatus } from './actions'
+import { adviceError } from './advisor'
+import { submitAdvice } from './advisor-actions'
 import type { InsightsSearch } from './schemas'
+
+export function AdviceRequestForm({
+  slug,
+  busy,
+  blocked,
+}: {
+  slug: string
+  busy: boolean
+  blocked: string | null
+}) {
+  const [state, action, pending] = useActionState(submitAdvice, null)
+  const failed =
+    state?.status === 'error' ||
+    state?.status === 'no_facts' ||
+    state?.status === 'disabled' ||
+    state?.status === 'limit'
+  return (
+    <form action={action} className="grid justify-items-start gap-2">
+      <input type="hidden" name="slug" value={slug} />
+      <button
+        className="action-button disabled:cursor-default disabled:opacity-60"
+        disabled={pending || busy || !!blocked}
+        aria-describedby={blocked ? 'advisor-blocked' : undefined}
+      >
+        Pedir recomendaciones
+      </button>
+      {blocked && <p id="advisor-blocked">{adviceError(blocked)}</p>}
+      {!blocked && failed && <p role="alert">{adviceError(state.status)}</p>}
+    </form>
+  )
+}
 
 export function InsightStatusForm({
   slug,
