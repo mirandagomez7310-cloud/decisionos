@@ -1,6 +1,7 @@
 import 'server-only'
 import { requireRole } from '@/lib/server/auth'
 import { createClient } from '@/lib/supabase/server'
+import { sortInsights } from '@/features/insights/shared'
 import {
   periodSchema,
   resolvePeriod,
@@ -67,6 +68,14 @@ export async function getDashboard(slug: string, rawPeriod?: string) {
       .select('id', { head: true, count: 'exact' })
       .eq('organization_id', args.p_organization_id)
       .limit(1),
+    // Pocas filas (8 reglas al mes): se ordena por gravedad en TS.
+    db
+      .from('insights')
+      .select('id, title, severity, rule_key, created_at')
+      .eq('organization_id', args.p_organization_id)
+      .eq('status', 'new')
+      .order('created_at', { ascending: false })
+      .limit(100),
   ])
   const [
     summary,
@@ -77,8 +86,9 @@ export async function getDashboard(slug: string, rawPeriod?: string) {
     customersUp,
     customersDown,
     sales,
+    insights,
   ] = results
-  if (results.some((result) => result.error) || !summary.data)
+  if (results.slice(0, -1).some((result) => result.error) || !summary.data)
     return { ...membership, kind, period, error: true as const }
   return {
     ...membership,
@@ -90,6 +100,8 @@ export async function getDashboard(slug: string, rawPeriod?: string) {
     previous: previous.data ?? [],
     products: [...(productsUp.data ?? []), ...(productsDown.data ?? [])],
     customers: [...(customersUp.data ?? []), ...(customersDown.data ?? [])],
+    insights: sortInsights(insights.data ?? []).slice(0, 3),
+    insightsError: !!insights.error,
     hasSales: (sales.count ?? 0) > 0,
   }
 }

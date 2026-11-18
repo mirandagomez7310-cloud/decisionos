@@ -87,12 +87,10 @@ function client(csv: string, kind = 'sales') {
   const rpc = vi
     .fn()
     .mockResolvedValue({ data: [{ rejected: [] }], error: null })
-  const download = vi
-    .fn()
-    .mockResolvedValue({
-      error: null,
-      data: { arrayBuffer: async () => Buffer.from(csv) },
-    })
+  const download = vi.fn().mockResolvedValue({
+    error: null,
+    data: { arrayBuffer: async () => Buffer.from(csv) },
+  })
   const db = {
     from,
     rpc,
@@ -121,8 +119,12 @@ it('reintenta la misma RPC, envía decimales exactos y registra rechazos con raw
   })
   await handleImport(db, job)
   await handleImport(db, job)
-  expect(rpc).toHaveBeenCalledTimes(2)
-  expect(rpc.mock.calls[0]).toEqual(rpc.mock.calls[1])
+  expect(rpc).toHaveBeenCalledTimes(4)
+  expect(rpc.mock.calls[0]).toEqual(rpc.mock.calls[2])
+  for (const call of [2, 4])
+    expect(rpc).toHaveBeenNthCalledWith(call, 'enqueue_insights', {
+      p_organization_id: org,
+    })
   expect(rpc.mock.calls[0]).toEqual([
     'apply_import_sales',
     {
@@ -184,9 +186,9 @@ it('envía catálogos en lotes de 2000, conserva active vacío y actualiza progr
     ).join('\n')
   const { db, calls, rpc } = client(csv, 'products')
   await handleImport(db, job)
-  expect(rpc.mock.calls.map((call) => call[1].p_rows.length)).toEqual([
-    2000, 2000, 1,
-  ])
+  expect(
+    rpc.mock.calls.slice(0, -1).map((call) => call[1].p_rows.length),
+  ).toEqual([2000, 2000, 1])
   expect(rpc.mock.calls[0]![1].p_rows[0]).toMatchObject({ active: false })
   expect(rpc.mock.calls[0]![1].p_rows[1]).not.toHaveProperty('active')
   expect(
@@ -209,15 +211,33 @@ it('propaga fallo RPC sin marcar la importación terminada', async () => {
   ).toBe(false)
 })
 
-it('revierte con una sola RPC y audita solo tras éxito', async () => {
+it('revierte, audita y encola el cálculo solo tras éxito', async () => {
   const { db, rpc, calls } = client('')
   await handleRevert(db, job)
-  expect(rpc).toHaveBeenCalledWith('revert_import', {
+  expect(rpc).toHaveBeenNthCalledWith(1, 'revert_import', {
     p_organization_id: org,
     p_import_id: id,
+  })
+  expect(rpc).toHaveBeenNthCalledWith(2, 'enqueue_insights', {
+    p_organization_id: org,
   })
   expect(calls.map((call) => call.table)).toEqual(['audit_log'])
   rpc.mockResolvedValue({ data: null, error: { message: 'SQL falló' } })
   await expect(handleRevert(db, job)).rejects.toThrow('SQL falló')
+  expect(rpc).toHaveBeenCalledTimes(3)
   expect(calls).toHaveLength(1)
+})
+
+it('un fallo al encolar el cálculo no hace fallar la reversión', async () => {
+  const { db, rpc } = client('')
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+  rpc
+    .mockResolvedValueOnce({ data: null, error: null })
+    .mockResolvedValueOnce({ data: null, error: { message: 'cola caída' } })
+  await expect(handleRevert(db, job)).resolves.toBeUndefined()
+  expect(log).toHaveBeenCalledWith(
+    'No se pudo encolar el cálculo de insights',
+    expect.any(Error),
+  )
+  log.mockRestore()
 })

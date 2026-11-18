@@ -122,7 +122,7 @@ Lectura: owner/admin; escritura solo servicio. FK compuesta a imports; índice `
 
 **jobs**
 `id` · `organization_id uuid null` (null = sistema) · `kind text` · `payload jsonb` · `status text check in ('queued','running','done','failed')` · `attempts int default 0` · `max_attempts int default 3` · `run_after timestamptz default now()` · `locked_at null` · `locked_by text null` · `progress jsonb` · `last_error text null` · `created_at` · `finished_at null`.
-`kind` limitado a `import` y `revert_import`; `payload` y `progress` por defecto `{}`, estado inicial `queued`, intentos no negativos y máximo positivo. Sin trigger `updated_at`.
+`kind` limitado a `import`, `revert_import` y `compute_insights`. `payload` y `progress` por defecto `{}`, estado inicial `queued`, intentos no negativos y máximo positivo. Sin trigger `updated_at`. Un índice único parcial permite un solo `compute_insights` en estado `queued` o `running` por organización.
 
 `claim_job(worker text, kinds text[])`: solo service_role, security definer con search_path vacío. Reclama un queued vencido del tipo solicitado con intentos restantes mediante `FOR UPDATE SKIP LOCKED`, lo marca running, incrementa attempts y fija bloqueo; devuelve null si no hay. `complete_job(id uuid, status text, last_error text)`: mismos permisos, acepta done/failed sobre un running, limpia bloqueo y fija finished_at al terminar. Failed con intentos restantes vuelve a queued, sin finished_at, con espera de un minuto por intento.
 
@@ -138,8 +138,28 @@ Lectura: owner/admin; escritura solo servicio. FK compuesta a imports; índice `
 ### Inteligencia (fase 5)
 
 **insights**
-`id` · `organization_id` · `module text check in ('executive','sales','profit','inventory','cash')` · `kind insight_kind` (`fact`, `hypothesis`, `suggestion`) · `severity text check in ('info','warning','critical')` · `title text` · `body text` · `evidence jsonb` (métrica, periodo, ids de filas o consulta) · `metric_snapshot jsonb` (cifras en el momento de generarse) · `period_start date` · `period_end date` · `generated_by text check in ('rule','llm')` · `rule_key text null` · `status text check in ('new','seen','dismissed','done')` · `created_at`.
-Un `fact` solo lo genera una regla (`generated_by = 'rule'`); el LLM solo puede crear `hypothesis` y `suggestion`, y siempre con `evidence` que apunte a insights o métricas existentes. Esta restricción va en un `check` y en el adaptador.
+`id uuid` · `organization_id uuid` (FK a `organizations` con borrado en cascada) · `module text check in ('executive','sales','profit','inventory','cash')` · `kind text check in ('fact','hypothesis','suggestion')` · `severity text check in ('info','warning','critical')` · `title text` · `body text` · `evidence jsonb` · `metric_snapshot jsonb` · `period_start date` · `period_end date` · `generated_by text check in ('rule','llm')` · `rule_key text null` · `status text check in ('new','seen','dismissed','done') default 'new'` · `created_at timestamptz` · `updated_at timestamptz` (trigger `set_updated_at`). Solo `rule_key` admite SQL NULL.
+
+Un `fact` exige `generated_by = 'rule'` y toda regla exige `rule_key`. Hay una restricción única sobre `(organization_id, rule_key, period_start)` y un índice sobre `(organization_id, status, created_at desc)`. RLS permite a los miembros autenticados leer los insights de su organización. La escritura directa corresponde a `service_role`.
+
+**RPC de insights (`20261119000000_insights.sql`)**
+
+- `evaluate_insight_rules(p_organization_id uuid, p_as_of date)` es SQL stable, security invoker y solo la ejecuta `service_role`. Devuelve `rule_key`, `module`, `severity`, `period_start`, `period_end`, `evidence` y `metric_snapshot` por regla disparada. El mes cerrado compara el último mes natural completo con el anterior. El corte abarca desde el día 1 del mes en curso hasta `p_as_of`, inclusive.
+- `set_insight_status(p_insight_id uuid, p_status text)` es security definer y solo la ejecuta `authenticated`. Owner, admin y analyst pueden cambiar el estado dentro de su organización. Devuelve la fila actualizada y registra `insights.status_changed` en `audit_log` con el actor y los estados `old` y `new`. Usa `22023` para un estado inválido y `42501` si se deniega el cambio.
+- `enqueue_daily_insights()` es security definer y solo la ejecuta `service_role`. Encola `compute_insights` con payload `{}` por organización con ventas, inventario o cuentas por cobrar, y devuelve el total encolado.
+
+| Regla | Módulo | Periodo | Condición | Severidad |
+|---|---|---|---|---|
+| `sales_drop` | sales | Mes cerrado | `metrics_summary.net_sales_change_pct <= -10` | warning, critical desde −20 % |
+| `margin_drop` | profit | Mes cerrado | `metrics_summary.margin_pct_change_pts <= -3` | warning |
+| `negative_margin_products` | profit | Mes cerrado | Algún `metrics_by_product.gross_margin < 0` | warning |
+| `low_cost_coverage` | profit | Mes cerrado | `metrics_summary.coverage < 80` | info |
+| `stale_inventory` | inventory | Corte | `inventory_summary.stale_share_pct > 20` | warning |
+| `high_risk_customers` | cash | Corte | Algún `receivables_by_customer.risk = 'alto'` | critical |
+| `receivables_concentration` | cash | Corte | `receivables_summary.customer_count > 5` y `top5_share_pct > 50` (con 5 clientes o menos la concentración siempre es 100 %) | info |
+| `overdue_share` | cash | Corte | `receivables_summary.overdue_pct > 30` | warning |
+
+`evidence` indica `metric`, `from`, `to`, `prev_from` y `prev_to`. Las fechas previas son nulas para el corte. Para productos con margen negativo y clientes de alto riesgo añade el `count` total y hasta 20 `ids`, por menor margen o mayor saldo vencido, con desempate por ID. `metric_snapshot` usa los nombres de columna de las métricas y, para esas dos reglas, conserva el menor margen o el mayor saldo vencido con el nivel de riesgo.
 
 Las alertas son insights con `severity in ('warning','critical')`; el envío se registra en `alert_deliveries` (fase 5).
 
@@ -149,9 +169,9 @@ Las alertas son insights con `severity in ('warning','critical')`; el envío se 
 
 ## Métricas en SQL
 
-Implementadas en `20261114000000_metrics.sql` (0004). Vista `sale_lines_enriched with (security_invoker = true)`: líneas con `sold_on`, `status` y `customer_id`, unidas a ventas por la FK compuesta. SELECT solo para authenticated.
+Implementadas en `20261114000000_metrics.sql` (0004). Vista `sale_lines_enriched with (security_invoker = true)`: líneas con `sold_on`, `status` y `customer_id`, unidas a ventas por la FK compuesta. SELECT para `authenticated` y `service_role`.
 
-RPC SQL stable, security invoker, search_path vacío y EXECUTE solo para authenticated (revocado a public y anon). Todas filtran la organización solicitada y ventas completed; RLS limita los datos al usuario.
+RPC SQL stable, security invoker, search_path vacío y EXECUTE para `authenticated` (revocado a `public` y `anon`). La migración de insights concede a `service_role` ejecución explícita de `metrics_summary` y `metrics_by_product` para el evaluador. Todas filtran la organización solicitada y ventas completed; RLS limita los datos al usuario.
 
 - `metrics_summary(p_organization_id uuid, p_from date, p_to date, p_prev_from date, p_prev_to date)`: una fila con net_sales, prev_net_sales, net_sales_change_pct, sales_count (cabeceras), gross_margin, margin_base, margin_pct, prev_margin_pct, margin_pct_change_pts y coverage.
 - `metrics_daily_sales(p_organization_id uuid, p_from date, p_to date)`: day y net_sales, un día por fila del rango inclusivo mediante generate_series, con cero sin ventas.
@@ -171,7 +191,7 @@ Los agregados sin datos devuelven importes y conteos cero, con porcentajes null.
 
 ### Inventario y cobranza (fase 4)
 
-Las cuatro RPC de `20261118000000_inventory_cash_metrics.sql` reciben `p_organization_id uuid` y `p_as_of date`. La aplicación obtiene el corte con `todayInMexico`. Conservan el filtrado por organización, RLS y ejecución solo para `authenticated`. Los desgloses admiten `.order()` y `.range()` de PostgREST.
+Las cuatro RPC de `20261118000000_inventory_cash_metrics.sql` reciben `p_organization_id uuid` y `p_as_of date`. La aplicación obtiene el corte con `todayInMexico`. Conservan el filtrado por organización y RLS, con ejecución para `authenticated` y permiso explícito para `service_role` desde la migración de insights. Los desgloses admiten `.order()` y `.range()` de PostgREST.
 
 - `inventory_summary` devuelve `snapshot_on`, `inventory_value`, `value_coverage`, `cogs_90d`, `days_on_hand`, `turnover`, `stale_value`, `stale_share_pct` (parte del valor sin movimiento, 1 decimal), `stale_count` y `product_count`.
 - `inventory_by_product` devuelve `product_id`, `sku`, `name`, `quantity`, `unit_cost`, `inventory_value`, `cogs_90d`, `days_on_hand`, `last_sold_on`, `days_since_sale` e `is_stale`.
@@ -202,7 +222,7 @@ Sin snapshot o sin cuentas abiertas, el desglose correspondiente queda vacío. E
 2. `0002_business`: `products`, `customers`, `sales`, `sale_lines`, `inventory_snapshots`, `receivables`.
 3. `0003_imports_jobs`: `imports`, `import_rows`, `jobs`, bucket privado `imports` con sus políticas en `storage.objects` y test cruzado.
 4. `0004_metrics_views`: escrita en `20261114000000_metrics.sql`; vista y RPC de métricas.
-5. `0005_insights`: `insight_kind`, `insights`. (`alert_deliveries` y `alert_rules` se diseñan en la fase 5, en una migración propia.)
+5. `0005_insights` — escrita en `20261119000000_insights.sql`. Tabla, evaluación de reglas, actualización de estado y encolado diario. `alert_deliveries` y `alert_rules` quedan para una migración propia.
 
 ## Reversión de importaciones
 

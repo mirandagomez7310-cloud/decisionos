@@ -168,6 +168,7 @@ test.describe('miembros e invitaciones', () => {
       '/o/' + slug,
       members,
       `/o/${slug}/settings/audit`,
+      `/o/${slug}/insights`,
       `/o/${slug}/sales`,
       `/o/${slug}/margin`,
       `/o/${slug}/inventory`,

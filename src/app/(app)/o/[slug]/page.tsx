@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { DashboardInsights } from '@/features/insights/components'
+import { QueryAlert } from '@/features/analysis/components'
 import { getDashboard } from '@/features/dashboard/queries'
 import { EmptySales } from '@/features/dashboard/empty-sales'
 import { PeriodSelect } from '@/features/dashboard/period-select'
@@ -111,10 +113,19 @@ export default async function Page({
         </p>
       </>
     )
+  const diagnosis = data.insightsError ? (
+    <QueryAlert href={`/o/${slug}?periodo=${data.kind}`} label="Reintentar">
+      No pudimos consultar el diagnóstico.
+    </QueryAlert>
+  ) : (
+    <DashboardInsights slug={slug} rows={data.insights} />
+  )
   if (!data.hasSales)
     return (
       <>
         {heading}
+        {/* Con hallazgos de inventario o cobranza, van antes del aviso de ventas. */}
+        {diagnosis}
         <EmptySales slug={slug} role={data.role} />
       </>
     )
@@ -199,6 +210,7 @@ export default async function Page({
           </p>
         </section>
       </div>
+      {diagnosis}
       <LineChart
         current={data.current}
         previous={data.previous}

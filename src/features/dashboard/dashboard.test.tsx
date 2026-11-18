@@ -16,6 +16,7 @@ const data = {
   kind: 'mtd',
   role: 'owner',
   hasSales: true,
+  insights: [],
   period: {
     from: '2026-11-01',
     to: '2026-11-13',
@@ -95,6 +96,27 @@ it.each(['owner', 'admin', 'analyst', 'viewer'])(
       expect(screen.getByText(/Pide a un propietario/)).toBeInTheDocument()
   },
 )
+it('muestra hallazgos de cobranza aunque todavía no haya ventas', async () => {
+  await show({
+    ...data,
+    hasSales: false,
+    insights: [{
+      id: '1',
+      title: 'Clientes con riesgo alto',
+      severity: 'critical',
+      rule_key: 'high_risk_customers',
+    }],
+  })
+  const diagnosis = screen
+    .getByRole('heading', { name: 'Diagnóstico' })
+    .closest('section')!
+  expect(within(diagnosis).getByText('Crítico')).toBeInTheDocument()
+  const link = within(diagnosis).getByRole('link', { name: 'Ver evidencia' })
+  const evidence = new URL((link as HTMLAnchorElement).href)
+  expect(evidence.pathname).toBe('/o/demo/receivables')
+  expect(evidence.searchParams.get('riesgo')).toBe('alto')
+})
+
 it('explica el error y conserva el periodo al reintentar', async () => {
   await show({ ...data, error: true })
   expect(screen.getByRole('alert')).toHaveTextContent(

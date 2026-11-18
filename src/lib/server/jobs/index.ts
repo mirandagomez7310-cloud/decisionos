@@ -2,6 +2,7 @@ import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { handleImport } from './handlers/import'
+import { handleComputeInsights } from './handlers/insights'
 import { handleRevert } from './handlers/revert'
 import { checked, importId, workerClient } from './shared'
 export async function runPendingJobs({ maxJobs = 5, worker = 'web' } = {}) {
@@ -9,12 +10,17 @@ export async function runPendingJobs({ maxJobs = 5, worker = 'web' } = {}) {
     const db = workerClient(createAdminClient())
     for (let i = 0; i < maxJobs; i++) {
       const job = await checked(
-        db.rpc('claim_job', { worker, kinds: ['import', 'revert_import'] }),
+        db.rpc('claim_job', {
+          worker,
+          kinds: ['import', 'revert_import', 'compute_insights'],
+        }),
       )
       if (!job?.id) break
       try {
         if (job.kind === 'import') await handleImport(db, job)
-        else await handleRevert(db, job)
+        else if (job.kind === 'revert_import') await handleRevert(db, job)
+        else if (job.kind === 'compute_insights')
+          await handleComputeInsights(db, job)
         await checked(
           db.rpc('complete_job', {
             id: job.id,
@@ -32,7 +38,10 @@ export async function runPendingJobs({ maxJobs = 5, worker = 'web' } = {}) {
               last_error: message,
             }),
           )
-          if (job.attempts >= job.max_attempts)
+          if (
+            job.attempts >= job.max_attempts &&
+            (job.kind === 'import' || job.kind === 'revert_import')
+          )
             await checked(
               db
                 .from('imports')

@@ -1,4 +1,4 @@
-import type { Database as GeneratedDatabase } from './database.types'
+import type { Database as GeneratedDatabase, Json } from './database.types'
 
 export type { Json } from './database.types'
 type PeriodArgs = {
@@ -82,10 +82,57 @@ type ReceivablesCustomer = ReceivablesBalances & {
   share_pct: number
   risk: 'alto' | 'medio' | 'bajo'
 }
-// Firmas de las migraciones de métricas. Regenerar al actualizar los tipos locales.
+export type InsightRule = {
+  rule_key: string
+  module: 'sales' | 'profit' | 'inventory' | 'cash'
+  severity: 'info' | 'warning' | 'critical'
+  period_start: string
+  period_end: string
+  evidence: NonNullable<Json>
+  metric_snapshot: NonNullable<Json>
+}
+
+export type Insight = Omit<InsightRule, 'rule_key' | 'module'> & {
+  id: string
+  organization_id: string
+  module: InsightRule['module'] | 'executive'
+  kind: 'fact' | 'hypothesis' | 'suggestion'
+  title: string
+  body: string
+  generated_by: 'rule' | 'llm'
+  rule_key: string | null
+  status: 'new' | 'seen' | 'dismissed' | 'done'
+  created_at: string
+  updated_at: string
+}
+
+type InsightDefaults = 'id' | 'rule_key' | 'status' | 'created_at' | 'updated_at'
+
+// Firmas añadidas tras la generación local de tipos.
 export type Database = GeneratedDatabase & {
   public: {
+    Tables: {
+      insights: {
+        Row: Insight
+        Insert: Omit<Insight, InsightDefaults> & Partial<Pick<Insight, InsightDefaults>>
+        Update: Partial<Insight>
+        Relationships: [{
+          foreignKeyName: 'insights_organization_id_fkey'
+          columns: ['organization_id']
+          isOneToOne: false
+          referencedRelation: 'organizations'
+          referencedColumns: ['id']
+        }]
+      }
+    }
     Functions: {
+      evaluate_insight_rules: { Args: AsOfArgs; Returns: InsightRule[] }
+      set_insight_status: {
+        Args: { p_insight_id: string; p_status: Insight['status'] }
+        Returns: Insight
+      }
+      enqueue_daily_insights: { Args: never; Returns: number }
+      enqueue_insights: { Args: { p_organization_id: string }; Returns: boolean }
       inventory_summary: { Args: AsOfArgs; Returns: InventorySummary[] }
       inventory_by_product: { Args: AsOfArgs; Returns: InventoryProduct[] }
       receivables_summary: { Args: AsOfArgs; Returns: ReceivablesSummary[] }

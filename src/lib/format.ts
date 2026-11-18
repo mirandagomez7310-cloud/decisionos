@@ -18,6 +18,14 @@ export const formatPercentChange = (value: number) =>
   (value >= 0 ? '+' : '') + formatPercent(value)
 export const formatPoints = (value: number) =>
   (value >= 0 ? '+' : '') + minus(decimal.format(value)) + ' pts'
+export const formatMonth = (day: string) =>
+  new Intl.DateTimeFormat('es-MX', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+    .format(new Date(day + 'T00:00:00Z'))
+    .replace(' de ', ' ')
 export function formatPeriod(from: string, to: string) {
   const start = new Date(from + 'T00:00:00Z')
   const end = new Date(to + 'T00:00:00Z')
