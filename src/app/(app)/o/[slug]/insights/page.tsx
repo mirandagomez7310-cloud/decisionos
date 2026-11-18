@@ -6,14 +6,16 @@ import {
   InsightEvidence,
   InsightSeverity,
 } from '@/features/insights/components'
-import { getInsights } from '@/features/insights/queries'
+import { getAdvisor, getInsights } from '@/features/insights/queries'
+import { Recommendations } from '@/features/insights/recommendations'
 import {
   insightModules,
   insightStates,
+  insightStatuses,
   insightsSearchSchema,
   type InsightsSearch,
 } from '@/features/insights/schemas'
-import { formatInsightPeriod } from '@/features/insights/shared'
+import { formatInsightPeriod, sortInsights } from '@/features/insights/shared'
 import { InsightStatusForm } from '@/features/insights/status-form'
 import { requireRole } from '@/lib/server/auth'
 
@@ -64,7 +66,10 @@ export default async function Page({
   const search = parsed.data
   const href = (changes: Partial<InsightsSearch> = {}) =>
     `${path}?${new URLSearchParams({ ...search, ...changes })}`
-  const data = await getInsights(slug, search)
+  const [data, advisor] = await Promise.all([
+    getInsights(slug, search),
+    getAdvisor(slug),
+  ])
   if (data.error)
     return (
       <>
@@ -74,10 +79,19 @@ export default async function Page({
         </QueryAlert>
       </>
     )
+  const recommendations = (
+    <Recommendations
+      slug={slug}
+      href={href()}
+      canChange={data.canChange}
+      advisor={advisor}
+    />
+  )
   if (!data.hasData)
     return (
       <>
         {heading}
+        {recommendations}
         <EmptyImport
           slug={slug}
           role={data.role}
@@ -89,9 +103,23 @@ export default async function Page({
       </>
     )
 
+  // Incluye las citas del filtro actual aunque queden fuera de los 100 más recientes.
+  const rows = new Map(data.rows.map((row) => [row.id, row]))
+  if (!advisor.error) {
+    const status = insightStatuses[insightStates.indexOf(search.estado)]
+    for (const fact of advisor.citations.values()) {
+      if (
+        fact.status === status &&
+        (search.modulo === 'todos' || fact.module === search.modulo)
+      )
+        rows.set(fact.id, fact)
+    }
+  }
+
   return (
     <>
       {heading}
+      {recommendations}
       <div className="analysis-controls">
         <nav className="analysis-switch" aria-label="Estado de los hallazgos">
           {insightStates.map((estado, index) => (
@@ -116,11 +144,11 @@ export default async function Page({
           ))}
         </nav>
       </div>
-      {data.rows.length ? (
+      {rows.size ? (
         <ol className="insight-list">
-          {data.rows.map((row) => (
+          {sortInsights([...rows.values()]).map((row) => (
             <li key={row.id}>
-              <article>
+              <article id={`insight-${row.id}`}>
                 <div className="insight-meta">
                   <InsightSeverity severity={row.severity} />
                   <span className="label-condensed">{modules[row.module]}</span>
