@@ -130,10 +130,42 @@ type DeliveryRequired =
   | 'recipient_user_id'
   | 'recipient_email'
 
+export type AdvisorRun = {
+  id: string
+  organization_id: string
+  period_start: string
+  input_hash: string
+  status: 'queued' | 'running' | 'done' | 'failed'
+  cached: boolean
+  driver: string | null
+  model: string | null
+  input_tokens: number | null
+  output_tokens: number | null
+  items: number | null
+  error: string | null
+  requested_by: string | null
+  created_at: string
+  finished_at: string | null
+}
+
+type AdvisorRunRequired = 'organization_id' | 'period_start' | 'input_hash'
+
 // Firmas añadidas tras la generación local de tipos.
 export type Database = GeneratedDatabase & {
   public: {
     Tables: {
+      advisor_runs: {
+        Row: AdvisorRun
+        Insert: Pick<AdvisorRun, AdvisorRunRequired> & Partial<AdvisorRun>
+        Update: Partial<AdvisorRun>
+        Relationships: [{
+          foreignKeyName: 'advisor_runs_organization_id_fkey'
+          columns: ['organization_id']
+          isOneToOne: false
+          referencedRelation: 'organizations'
+          referencedColumns: ['id']
+        }]
+      }
       deliveries: {
         Row: Delivery
         Insert: Pick<Delivery, DeliveryRequired> & Partial<Delivery>
@@ -169,6 +201,27 @@ export type Database = GeneratedDatabase & {
       }
     }
     Functions: {
+      request_advisor: {
+        Args: { p_organization_id: string; p_input_hash: string; p_daily_limit: number }
+        Returns: Json
+      }
+      advisor_usage: {
+        Args: { p_organization_id: string }
+        Returns: { used: number }[]
+      }
+      complete_advisor_run: {
+        Args: {
+          p_run_id: string
+          p_status: 'done' | 'failed'
+          p_error: string | null
+          p_driver: string | null
+          p_model: string | null
+          p_input_tokens: number | null
+          p_output_tokens: number | null
+          p_items: number | null
+        }
+        Returns: undefined
+      }
       alert_recipients: {
         Args: { p_organization_id: string }
         Returns: { user_id: string; email: string }[]
