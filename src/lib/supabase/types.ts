@@ -202,12 +202,12 @@ export type Database = GeneratedDatabase & {
     }
     Functions: {
       request_advisor: {
-        Args: { p_organization_id: string; p_input_hash: string; p_daily_limit: number }
+        Args: { p_organization_id: string; p_input_hash: string }
         Returns: Json
       }
       advisor_usage: {
         Args: { p_organization_id: string }
-        Returns: { used: number }[]
+        Returns: { used: number; daily_limit: number }[]
       }
       complete_advisor_run: {
         Args: {

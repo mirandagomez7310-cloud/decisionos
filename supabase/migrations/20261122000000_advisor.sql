@@ -34,7 +34,12 @@ alter table public.jobs add constraint jobs_kind_check
 create unique index jobs_active_advisor_idx on public.jobs(organization_id)
   where kind = 'advisor' and status in ('queued', 'running');
 
-create function public.advisor_usage(p_organization_id uuid) returns table (used int)
+-- Límite diario de consultas no cacheadas por organización. Vive en SQL para que ningún cliente pueda elegirlo.
+create function public.advisor_daily_limit() returns int
+language sql immutable set search_path = '' as $$ select 10 $$;
+revoke all on function public.advisor_daily_limit() from public, anon, authenticated;
+
+create function public.advisor_usage(p_organization_id uuid) returns table (used int, daily_limit int)
 language plpgsql stable security definer set search_path = '' as $$
 declare
   today date := (pg_catalog.now() at time zone 'America/Mexico_City')::date;
@@ -43,7 +48,7 @@ begin
     raise exception 'Advisor usage denied' using errcode = '42501';
   end if;
 
-  return query select count(*)::int from public.advisor_runs r
+  return query select count(*)::int, public.advisor_daily_limit() from public.advisor_runs r
   where r.organization_id = p_organization_id and not r.cached
     and r.created_at >= (today::timestamp at time zone 'America/Mexico_City')
     and r.created_at < ((today + 1)::timestamp at time zone 'America/Mexico_City')
@@ -51,22 +56,22 @@ begin
 end;
 $$;
 
-create function public.request_advisor(p_organization_id uuid, p_input_hash text, p_daily_limit int)
+create function public.request_advisor(p_organization_id uuid, p_input_hash text)
 returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare
   period date := pg_catalog.date_trunc('month', pg_catalog.now() at time zone 'America/Mexico_City')::date;
   run_id uuid;
   cached_run public.advisor_runs;
+  daily_limit int := public.advisor_daily_limit();
   used int;
 begin
   if p_organization_id is null
     or p_organization_id not in (select public.my_org_ids_with_role('{owner,admin,analyst}')) then
     raise exception 'Advisor request denied' using errcode = '42501';
   end if;
-  if p_input_hash is null or p_input_hash !~ '^[0-9A-Fa-f]{64}$'
-    or p_daily_limit is null or p_daily_limit not between 1 and 100 then
-    raise exception 'Invalid advisor hash or daily limit' using errcode = '22023';
+  if p_input_hash is null or p_input_hash !~ '^[0-9A-Fa-f]{64}$' then
+    raise exception 'Invalid advisor hash' using errcode = '22023';
   end if;
 
   -- Serializa solicitudes de la misma organización y protege la FK durante la petición.
@@ -96,8 +101,8 @@ begin
   end if;
 
   select u.used into used from public.advisor_usage(p_organization_id) u;
-  if used >= p_daily_limit then
-    return jsonb_build_object('status', 'limit', 'used', used, 'limit', p_daily_limit);
+  if used >= daily_limit then
+    return jsonb_build_object('status', 'limit', 'used', used, 'limit', daily_limit);
   end if;
 
   insert into public.advisor_runs(organization_id, period_start, input_hash, requested_by)
@@ -119,7 +124,7 @@ begin
 
   insert into public.audit_log(organization_id, actor_user_id, actor_kind, action, entity, entity_id, data)
   values (p_organization_id, auth.uid(), 'user', 'advisor.requested', 'advisor_runs', run_id::text, '{}'::jsonb);
-  return jsonb_build_object('status', 'queued', 'run_id', run_id, 'used', used + 1, 'limit', p_daily_limit);
+  return jsonb_build_object('status', 'queued', 'run_id', run_id, 'used', used + 1, 'limit', daily_limit);
 end;
 $$;
 
@@ -149,10 +154,10 @@ begin
 end;
 $$;
 
-revoke all on function public.request_advisor(uuid, text, int), public.advisor_usage(uuid),
+revoke all on function public.request_advisor(uuid, text), public.advisor_usage(uuid),
   public.complete_advisor_run(uuid, text, text, text, text, int, int, int)
   from public, anon, authenticated, service_role;
-grant execute on function public.request_advisor(uuid, text, int), public.advisor_usage(uuid)
+grant execute on function public.request_advisor(uuid, text), public.advisor_usage(uuid)
   to authenticated;
 grant execute on function public.complete_advisor_run(uuid, text, text, text, text, int, int, int)
   to service_role;

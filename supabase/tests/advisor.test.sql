@@ -3,6 +3,10 @@ create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 select plan(25);
 
+-- El límite real es 10; aquí se reduce a 2 dentro de la transacción del test.
+create or replace function public.advisor_daily_limit() returns int
+language sql immutable set search_path = '' as $$ select 2 $$;
+
 insert into public.organizations(id, name, slug) values
   ('52000000-0000-0000-0000-000000000001', 'A', 'advisor-a'),
   ('52000000-0000-0000-0000-000000000002', 'B', 'advisor-b');
@@ -23,24 +27,24 @@ values
 
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"52000000-0000-0000-0000-000000000004","role":"authenticated"}';
-select throws_ok($$select public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('a', 64), 2)$$::text, '42501', null::text, 'El viewer no puede solicitar Advisor');
+select throws_ok($$select public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('a', 64))$$::text, '42501', null::text, 'El viewer no puede solicitar Advisor');
 select is((select used from public.advisor_usage('52000000-0000-0000-0000-000000000001')), 0,
   'El viewer puede consultar el uso, que excluye ayer y los fallos disabled y busy');
 
 set local request.jwt.claims = '{"sub":"52000000-0000-0000-0000-000000000003","role":"authenticated"}';
-select throws_ok($$select public.request_advisor('52000000-0000-0000-0000-000000000002', repeat('a', 64), 2)$$::text, '42501', null::text, 'El analyst de A no puede solicitar Advisor en B');
+select throws_ok($$select public.request_advisor('52000000-0000-0000-0000-000000000002', repeat('a', 64))$$::text, '42501', null::text, 'El analyst de A no puede solicitar Advisor en B');
 select throws_ok($$select public.advisor_usage('52000000-0000-0000-0000-000000000002')$$::text, '42501', null::text, 'Solo un miembro puede consultar el uso');
-select throws_ok($$select public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('g', 64), 2)$$::text, '22023', null::text, 'El hash debe ser hexadecimal');
-select throws_ok($$select public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('a', 64), 0)$$::text, '22023', null::text, 'Se rechaza un límite fuera del intervalo');
-select throws_ok($$select public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('a', 64), null)$$::text, '22023', null::text, 'Se rechaza el límite nulo');
-select throws_ok($$select public.request_advisor('52000000-0000-0000-0000-000000000001', null, 2)$$::text, '22023', null::text, 'Se rechaza el hash nulo');
+select throws_ok($$select public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('g', 64))$$::text, '22023', null::text, 'El hash debe ser hexadecimal');
+select hasnt_function('public', 'request_advisor', array['uuid', 'text', 'integer'], 'El cliente no puede elegir el límite diario');
+select is((select daily_limit from public.advisor_usage('52000000-0000-0000-0000-000000000001')), 2, 'El uso informa el límite del servidor');
+select throws_ok($$select public.request_advisor('52000000-0000-0000-0000-000000000001', null)$$::text, '22023', null::text, 'Se rechaza el hash nulo');
 
 do $$begin
-  perform set_config('test.advisor_first', public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('a', 64), 2)::text, true);
+  perform set_config('test.advisor_first', public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('a', 64))::text, true);
 end$$;
 select is(current_setting('test.advisor_first')::jsonb - 'run_id',
   '{"status":"queued","used":1,"limit":2}'::jsonb, 'La primera solicitud ocupa una consulta');
-select is(public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('b', 64), 2), jsonb_build_object('status', 'running', 'run_id', (current_setting('test.advisor_first')::jsonb->>'run_id')::uuid),
+select is(public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('b', 64)), jsonb_build_object('status', 'running', 'run_id', (current_setting('test.advisor_first')::jsonb->>'run_id')::uuid),
   'Una ejecución activa se devuelve incluso con otro hash');
 select is((select count(*)::int from public.advisor_runs), 4,
   'El miembro de A no ve B y la segunda solicitud no crea otra ejecución');
@@ -83,7 +87,7 @@ select results_eq(
 
 set local role authenticated;
 do $$begin
-  perform set_config('test.advisor_cache', public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('a', 64), 1)::text, true);
+  perform set_config('test.advisor_cache', public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('a', 64))::text, true);
 end$$;
 select is(current_setting('test.advisor_cache')::jsonb->>'status', 'cached',
   'La caché se consulta antes del límite');
@@ -93,7 +97,7 @@ select ok((select cached and status = 'done' and driver = 'fake' and model = 'te
   'El acierto copia los metadatos de caché y queda cerrado');
 select is((select used from public.advisor_usage('52000000-0000-0000-0000-000000000001')), 1, 'La caché no consume otra consulta');
 do $$begin
-  perform set_config('test.advisor_second', public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('b', 64), 2)::text, true);
+  perform set_config('test.advisor_second', public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('b', 64))::text, true);
 end$$;
 select is(current_setting('test.advisor_second')::jsonb - 'run_id',
   '{"status":"queued","used":2,"limit":2}'::jsonb, 'La segunda ejecución sin caché se encola');
@@ -106,7 +110,7 @@ where organization_id = '52000000-0000-0000-0000-000000000001' and kind = 'advis
 reset role;
 
 set local role authenticated;
-select is(public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('c', 64), 2), '{"status":"limit","used":2,"limit":2}'::jsonb,
+select is(public.request_advisor('52000000-0000-0000-0000-000000000001', repeat('c', 64)), '{"status":"limit","used":2,"limit":2}'::jsonb,
   'La tercera consulta se bloquea porque el fallo del modelo sí cuenta');
 reset role;
 
