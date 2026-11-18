@@ -9,6 +9,10 @@ export const clientEnvSchema = z.object({
 export const serverEnvSchema = z.object({
   SUPABASE_SECRET_KEY: z.string().min(1),
   JOBS_SECRET: z.string().min(1),
+  MAIL_DRIVER: z.enum(['mailpit']).optional(),
+  MAIL_FROM: z.string().default('DecisionOS <alertas@decisionos.local>'),
+  APP_URL: z.url().default('http://127.0.0.1:3000'),
+  MAILPIT_URL: z.url().default('http://127.0.0.1:54324'),
 })
 
 // server-only impide que un import accidental exponga la clave secreta al cliente.
@@ -21,6 +25,10 @@ export const env = {
   ...serverEnvSchema.parse({
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
     JOBS_SECRET: process.env.JOBS_SECRET,
+    MAIL_DRIVER: process.env.MAIL_DRIVER,
+    MAIL_FROM: process.env.MAIL_FROM,
+    APP_URL: process.env.APP_URL,
+    MAILPIT_URL: process.env.MAILPIT_URL,
   }),
 }
 

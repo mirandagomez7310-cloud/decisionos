@@ -146,7 +146,7 @@ Un `fact` exige `generated_by = 'rule'` y toda regla exige `rule_key`. Hay una r
 
 - `evaluate_insight_rules(p_organization_id uuid, p_as_of date)` es SQL stable, security invoker y solo la ejecuta `service_role`. Devuelve `rule_key`, `module`, `severity`, `period_start`, `period_end`, `evidence` y `metric_snapshot` por regla disparada. El mes cerrado compara el último mes natural completo con el anterior. El corte abarca desde el día 1 del mes en curso hasta `p_as_of`, inclusive.
 - `set_insight_status(p_insight_id uuid, p_status text)` es security definer y solo la ejecuta `authenticated`. Owner, admin y analyst pueden cambiar el estado dentro de su organización. Devuelve la fila actualizada y registra `insights.status_changed` en `audit_log` con el actor y los estados `old` y `new`. Usa `22023` para un estado inválido y `42501` si se deniega el cambio.
-- `enqueue_daily_insights()` es security definer y solo la ejecuta `service_role`. Encola `compute_insights` con payload `{}` por organización con ventas, inventario o cuentas por cobrar, y devuelve el total encolado.
+- `enqueue_daily_insights()` es security definer y solo la ejecuta `service_role`. Encola `compute_insights` con payload `{}` por organización con ventas, inventario o cuentas por cobrar, y devuelve el total encolado. `enqueue_weekly_reports()` hace lo mismo con `weekly_report`. Ambas leen las organizaciones con `for key share`: si se borra una a la vez, el borrado espera y el lote no falla por la clave foránea de `jobs` (`20261121000000_weekly_reports.sql`).
 
 | Regla | Módulo | Periodo | Condición | Severidad |
 |---|---|---|---|---|

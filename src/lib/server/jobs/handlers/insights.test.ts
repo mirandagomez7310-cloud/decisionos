@@ -51,9 +51,12 @@ it('evalúa con la fecha de México, conserva duplicados y audita las reglas', a
 
   await handleComputeInsights(db, job)
 
-  expect(rpc).toHaveBeenCalledExactlyOnceWith('evaluate_insight_rules', {
+  expect(rpc).toHaveBeenNthCalledWith(1, 'evaluate_insight_rules', {
     p_organization_id: 'org',
     p_as_of: '2026-11-30',
+  })
+  expect(rpc).toHaveBeenNthCalledWith(2, 'enqueue_alerts', {
+    p_organization_id: 'org',
   })
   expect(from.mock.calls).toEqual([['insights'], ['audit_log']])
   expect(upsert).toHaveBeenCalledExactlyOnceWith(
@@ -83,10 +86,13 @@ it('evalúa con la fecha de México, conserva duplicados y audita las reglas', a
   })
 })
 
-it('audita el cálculo vacío sin insertar insights', async () => {
-  const { db, from, insert } = client([])
+it('audita el cálculo vacío y encola posibles reintentos', async () => {
+  const { db, from, insert, rpc } = client([])
   await handleComputeInsights(db, job)
   expect(from.mock.calls).toEqual([['audit_log']])
+  expect(rpc).toHaveBeenLastCalledWith('enqueue_alerts', {
+    p_organization_id: 'org',
+  })
   expect(insert).toHaveBeenCalledExactlyOnceWith(
     expect.objectContaining({ data: { candidates: 0, rules: [] } }),
   )

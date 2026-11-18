@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({
   run: vi.fn(),
   revert: vi.fn(),
   compute: vi.fn(),
+  alerts: vi.fn(),
+  weekly: vi.fn(),
 }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ rpc: mocks.rpc, from: mocks.from }),
@@ -13,6 +15,10 @@ vi.mock('@/lib/supabase/admin', () => ({
 vi.mock('./handlers/import', () => ({ handleImport: mocks.run }))
 vi.mock('./handlers/revert', () => ({ handleRevert: mocks.revert }))
 vi.mock('./handlers/insights', () => ({ handleComputeInsights: mocks.compute }))
+vi.mock('./handlers/alerts', () => ({ handleSendAlerts: mocks.alerts }))
+vi.mock('./handlers/weekly-report', () => ({
+  handleWeeklyReport: mocks.weekly,
+}))
 beforeEach(() => vi.resetAllMocks())
 const job = {
   id: 'job',
@@ -30,10 +36,33 @@ it('despacha, completa y respeta maxJobs', async () => {
   expect(mocks.run).toHaveBeenCalledOnce()
   expect(mocks.rpc).toHaveBeenNthCalledWith(1, 'claim_job', {
     worker: 'test',
-    kinds: ['import', 'revert_import', 'compute_insights'],
+    kinds: [
+      'import',
+      'revert_import',
+      'compute_insights',
+      'send_alerts',
+      'weekly_report',
+    ],
   })
   expect(mocks.rpc).toHaveBeenNthCalledWith(2, 'complete_job', {
     id: 'job',
+    status: 'done',
+    last_error: '',
+  })
+})
+
+it.each([
+  ['send_alerts', mocks.alerts],
+  ['weekly_report', mocks.weekly],
+])('despacha y completa el job %s', async (kind, handler) => {
+  const mailJob = { ...job, kind, payload: {} }
+  mocks.rpc
+    .mockResolvedValueOnce({ data: mailJob, error: null })
+    .mockResolvedValue({ data: null, error: null })
+  await runPendingJobs()
+  expect(handler).toHaveBeenCalledExactlyOnceWith(expect.anything(), mailJob)
+  expect(mocks.rpc).toHaveBeenNthCalledWith(2, 'complete_job', {
+    id: job.id,
     status: 'done',
     last_error: '',
   })

@@ -10,6 +10,8 @@ foreach ($line in $status) {
 $env:NEXT_PUBLIC_SUPABASE_URL = $env:API_URL
 $env:NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = $env:PUBLISHABLE_KEY
 $env:SUPABASE_SECRET_KEY = $env:SECRET_KEY
+$env:MAIL_DRIVER = 'mailpit'
+$env:APP_URL = 'http://127.0.0.1:3000'
 $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:TEMP 'decisionos-playwright'
 if (-not $env:JOBS_SECRET) { $env:JOBS_SECRET = 'local-jobs-secret-decisionos-2026' }
 # Base limpia como en CI: los datos del E2E anterior rompen las aserciones de tabla completa.

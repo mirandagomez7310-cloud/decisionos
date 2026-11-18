@@ -53,3 +53,17 @@ export function resolvePeriod(
     ),
   }
 }
+
+export function resolveWeek(today: string) {
+  const shift = (days: number) => {
+    const date = new Date(today + 'T00:00:00Z')
+    date.setUTCDate(date.getUTCDate() + days)
+    return date.toISOString().slice(0, 10)
+  }
+  return {
+    from: shift(-7),
+    to: shift(-1),
+    prevFrom: shift(-14),
+    prevTo: shift(-8),
+  }
+}
