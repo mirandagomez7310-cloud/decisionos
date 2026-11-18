@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { handleAdvisor } from './handlers/advisor'
 import { handleSendAlerts } from './handlers/alerts'
 import { handleImport } from './handlers/import'
 import { handleComputeInsights } from './handlers/insights'
@@ -20,6 +21,7 @@ export async function runPendingJobs({ maxJobs = 5, worker = 'web' } = {}) {
             'compute_insights',
             'send_alerts',
             'weekly_report',
+            'advisor',
           ],
         }),
       )
@@ -31,6 +33,7 @@ export async function runPendingJobs({ maxJobs = 5, worker = 'web' } = {}) {
           await handleComputeInsights(db, job)
         else if (job.kind === 'send_alerts') await handleSendAlerts(db, job)
         else if (job.kind === 'weekly_report') await handleWeeklyReport(db, job)
+        else if (job.kind === 'advisor') await handleAdvisor(db, job)
         await checked(
           db.rpc('complete_job', {
             id: job.id,
