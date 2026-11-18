@@ -82,7 +82,8 @@ test('viewer ve el hallazgo sin controles de estado', async ({ page }) => {
     .single()
   if (orgError) throw orgError
   const id = crypto.randomUUID()
-  const title = 'Hallazgo de prueba del viewer'
+  // Único por ejecución: los proyectos corren en paralelo sobre la misma organización.
+  const title = `Hallazgo de prueba del viewer ${id.slice(0, 8)}`
   const { error } = await db.from('insights').insert({
     id,
     organization_id: org.id,

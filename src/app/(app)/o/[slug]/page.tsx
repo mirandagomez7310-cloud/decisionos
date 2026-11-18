@@ -124,8 +124,9 @@ export default async function Page({
     return (
       <>
         {heading}
-        <EmptySales slug={slug} role={data.role} />
+        {/* Con hallazgos de inventario o cobranza, van antes del aviso de ventas. */}
         {diagnosis}
+        <EmptySales slug={slug} role={data.role} />
       </>
     )
   const s = data.summary
