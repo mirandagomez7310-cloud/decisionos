@@ -170,6 +170,8 @@ test.describe('miembros e invitaciones', () => {
       `/o/${slug}/settings/audit`,
       `/o/${slug}/sales`,
       `/o/${slug}/margin`,
+      `/o/${slug}/inventory`,
+      `/o/${slug}/receivables`,
       `/o/${slug}/imports`,
       `/o/${slug}/imports/new`,
       `/o/${slug}/catalog/products`,

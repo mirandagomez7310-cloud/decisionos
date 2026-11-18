@@ -1,4 +1,10 @@
-export function AnalysisLoading({ title }: { title: string }) {
+export function AnalysisLoading({
+  title,
+  columns,
+}: {
+  title: string
+  columns: number
+}) {
   return (
     <div aria-busy="true" aria-label={`Cargando ${title}`}>
       <div className="skeleton-heading" />
@@ -8,14 +14,11 @@ export function AnalysisLoading({ title }: { title: string }) {
           <tbody>
             {Array.from({ length: 8 }, (_, index) => (
               <tr key={index}>
-                {Array.from(
-                  { length: title === 'ventas' ? 6 : 5 },
-                  (_, column) => (
-                    <td key={column}>
-                      <div className="analysis-skeleton-cell">&nbsp;</div>
-                    </td>
-                  ),
-                )}
+                {Array.from({ length: columns }, (_, column) => (
+                  <td key={column}>
+                    <div className="analysis-skeleton-cell">&nbsp;</div>
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>

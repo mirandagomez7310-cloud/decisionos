@@ -1,10 +1,6 @@
+import { escapeIlike } from './shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  escapeIlike,
-  marginOrders,
-  marginSearchSchema,
-  salesSearchSchema,
-} from './schemas'
+import { marginOrders, marginSearchSchema, salesSearchSchema } from './schemas'
 import { getAnalysis } from './queries'
 
 const mocks = vi.hoisted(() => ({ client: vi.fn(), role: vi.fn() }))

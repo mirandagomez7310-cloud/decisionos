@@ -36,5 +36,22 @@ describe('navegación de organización', () => {
       '/o/demo/settings/members',
     )
     expect(screen.getByRole('link', { name: 'Auditoría' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: 'Margen' }).nextElementSibling,
+    ).toBe(screen.getByRole('link', { name: 'Inventario' }))
+    route.pathname = '/o/demo/inventory'
+    rerender(<OrganizationNavigation slug="demo" canManage={false} />)
+    expect(screen.getByRole('link', { name: 'Inventario' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+    const receivables = screen.getByRole('link', { name: 'Cobranza' })
+    expect(
+      screen.getByRole('link', { name: 'Inventario' }).nextElementSibling,
+    ).toBe(receivables)
+    expect(receivables).toHaveAttribute('href', '/o/demo/receivables')
+    route.pathname = '/o/demo/receivables'
+    rerender(<OrganizationNavigation slug="demo" canManage={false} />)
+    expect(receivables).toHaveAttribute('aria-current', 'page')
   })
 })

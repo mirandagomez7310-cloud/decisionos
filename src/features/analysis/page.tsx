@@ -1,4 +1,13 @@
 import Link from 'next/link'
+import {
+  AnalysisHeading,
+  AnalysisPagination,
+  AnalysisSummary,
+  AnalysisTable,
+  QueryAlert,
+  SortHeader,
+} from './components'
+import { tableHref } from './shared'
 import { requireRole } from '@/lib/server/auth'
 import { PeriodSelect } from '@/features/dashboard/period-select'
 import { EmptySales } from '@/features/dashboard/empty-sales'
@@ -43,50 +52,31 @@ export async function AnalysisPage({
     return (
       <>
         <h1>{title}</h1>
-        <p role="alert">
-          Parámetros de consulta inválidos.{' '}
-          <Link className="underline" href={path}>
-            Restablecer consulta
-          </Link>
-        </p>
+        <QueryAlert href={path} label="Restablecer consulta">
+          Parámetros de consulta inválidos.
+        </QueryAlert>
       </>
     )
   }
   const search = parsed.data
-  const href = (
-    changes: Partial<Record<keyof AnalysisSearch, string>> = {},
-  ) => {
-    // Sin filtrar, `q` ausente se serializaría como «undefined» y filtraría por ese texto.
-    const values = new URLSearchParams(
-      Object.entries({ ...search, pagina: '1', ...changes }).filter(
-        (entry): entry is [string, string] => Boolean(entry[1]),
-      ),
-    )
-    return `${path}?${values}`
-  }
+  const href = tableHref(path, search)
   const data = await getAnalysis(slug, screen, search)
   const heading = (
-    <div className="dashboard-head">
-      <div>
-        <h1>{title}</h1>
-        <p>
-          {formatPeriod(data.period.from, data.period.to)} vs.{' '}
-          {formatPeriod(data.period.prevFrom, data.period.prevTo)}
-        </p>
-      </div>
-      <PeriodSelect value={search.periodo} />
-    </div>
+    <AnalysisHeading
+      title={title}
+      action={<PeriodSelect value={search.periodo} />}
+    >
+      {formatPeriod(data.period.from, data.period.to)} vs.{' '}
+      {formatPeriod(data.period.prevFrom, data.period.prevTo)}
+    </AnalysisHeading>
   )
   if (data.error)
     return (
       <>
         {heading}
-        <p role="alert">
-          No pudimos consultar {sales ? 'las ventas' : 'el margen'}.{' '}
-          <Link className="underline" href={href()}>
-            Reintentar
-          </Link>
-        </p>
+        <QueryAlert href={href()} label="Reintentar">
+          No pudimos consultar {sales ? 'las ventas' : 'el margen'}.
+        </QueryAlert>
       </>
     )
   if (!data.hasSales)
@@ -105,25 +95,17 @@ export async function AnalysisPage({
     order?: AnalysisSearch['orden'],
     reverse?: AnalysisSearch['orden'],
   ) => (
-    <th
-      scope="col"
-      aria-sort={
+    <SortHeader
+      label={label}
+      direction={
         field === column ? (ascending ? 'ascending' : 'descending') : undefined
       }
-    >
-      {order ? (
-        <Link
-          href={href({
-            orden: search.orden === order && reverse ? reverse : order,
-          })}
-        >
-          {label}
-          {field === column ? (ascending ? ' ↑' : ' ↓') : ''}
-        </Link>
-      ) : (
-        label
-      )}
-    </th>
+      href={
+        order
+          ? href({ orden: search.orden === order && reverse ? reverse : order })
+          : undefined
+      }
+    />
   )
   return (
     <>
@@ -167,7 +149,7 @@ export async function AnalysisPage({
           </button>
         </form>
       </div>
-      <p className="analysis-summary">
+      <AnalysisSummary>
         {sales ? (
           `Suben ${data.counts[0]} · Bajan ${data.counts[1]} · Sin cambio ${data.counts[2]}`
         ) : (
@@ -184,7 +166,7 @@ export async function AnalysisPage({
             )}
           </>
         )}
-      </p>
+      </AnalysisSummary>
       {!data.rows.length ? (
         <p>
           {search.q ? (
@@ -202,129 +184,107 @@ export async function AnalysisPage({
       ) : (
         <>
           {!data.hasCurrentSales && <p>Sin ventas en el periodo</p>}
-          {/* oxlint-disable jsx-a11y/no-noninteractive-tabindex -- La región desplazable requiere foco para recorrer la tabla con teclado. */}
-          <section
-            className="analysis-scroll"
-            tabIndex={0}
-            aria-label={`Tabla de ${title.toLowerCase()} por ${search.vista}`}
+          <AnalysisTable
+            label={`Tabla de ${title.toLowerCase()} por ${search.vista}`}
           >
-            <table className="metrics-table analysis-table">
-              <thead>
-                <tr>
-                  {header(
-                    search.vista === 'productos' ? 'Producto' : 'Cliente',
-                    'name',
-                    'nombre',
-                  )}
-                  {/* La cifra que responde la pantalla va junto al nombre: en móvil es lo que se ve sin desplazar. */}
-                  {sales ? (
-                    <>
-                      {header(
-                        'Cambio en pesos',
-                        'delta',
-                        'cambio_baja',
-                        'cambio_sube',
-                      )}
-                      {header('Cambio %', 'delta_pct')}
-                      {header('Venta actual', 'net_sales', 'venta')}
-                      {header('Venta anterior', 'prev_net_sales')}
-                    </>
-                  ) : (
-                    <>
-                      {header(
-                        'Margen %',
-                        'margin_pct',
-                        'margen_pct_asc',
-                        'margen_pct_desc',
-                      )}
-                      {header('Margen en pesos', 'gross_margin', 'margen')}
-                      {header('Venta', 'net_sales', 'venta')}
-                      {header('Cobertura', 'coverage')}
-                    </>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {data.rows.map((row) => {
-                  const id = row.product_id ?? row.customer_id
-                  const code = row.sku ?? row.code
-                  const missing = row.coverage === null || row.coverage === 0
-                  const risk = !missing && row.gross_margin < 0
-                  return (
-                    <tr key={id} id={`fila-${id}`}>
-                      <th scope="row">
-                        {row.name}
-                        <span className="label-condensed analysis-code">
-                          {code}
-                        </span>
-                      </th>
-                      {sales ? (
-                        <>
-                          <td>{formatMoneyChange(row.delta)}</td>
-                          <td>
-                            {row.prev_net_sales === 0 || row.delta_pct === null
-                              ? 'Sin comparación'
-                              : formatPercentChange(row.delta_pct)}
-                          </td>
-                          <td>{formatMoney(row.net_sales)}</td>
-                          <td>{formatMoney(row.prev_net_sales)}</td>
-                        </>
-                      ) : (
-                        <>
-                          <td className={risk ? 'risk-cell' : undefined}>
-                            {!missing && row.margin_pct !== null ? (
-                              <>
-                                {formatPercent(row.margin_pct)}
-                                {risk && (
-                                  <span className="risk-label">Riesgo</span>
-                                )}
-                              </>
-                            ) : (
-                              <span className="label-condensed">
-                                Sin datos de costo
-                              </span>
-                            )}
-                          </td>
-                          <td className={risk ? 'risk-cell' : undefined}>
-                            {!missing && formatMoney(row.gross_margin)}
-                          </td>
-                          <td>{formatMoney(row.net_sales)}</td>
-                          <td className="label-condensed">
-                            {missing
-                              ? 'Sin datos de costo'
-                              : `${new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 }).format(row.coverage!)} %`}
-                          </td>
-                        </>
-                      )}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </section>
+            <thead>
+              <tr>
+                {header(
+                  search.vista === 'productos' ? 'Producto' : 'Cliente',
+                  'name',
+                  'nombre',
+                )}
+                {/* La cifra que responde la pantalla va junto al nombre: en móvil es lo que se ve sin desplazar. */}
+                {sales ? (
+                  <>
+                    {header(
+                      'Cambio en pesos',
+                      'delta',
+                      'cambio_baja',
+                      'cambio_sube',
+                    )}
+                    {header('Cambio %', 'delta_pct')}
+                    {header('Venta actual', 'net_sales', 'venta')}
+                    {header('Venta anterior', 'prev_net_sales')}
+                  </>
+                ) : (
+                  <>
+                    {header(
+                      'Margen %',
+                      'margin_pct',
+                      'margen_pct_asc',
+                      'margen_pct_desc',
+                    )}
+                    {header('Margen en pesos', 'gross_margin', 'margen')}
+                    {header('Venta', 'net_sales', 'venta')}
+                    {header('Cobertura', 'coverage')}
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {data.rows.map((row) => {
+                const id = row.product_id ?? row.customer_id
+                const code = row.sku ?? row.code
+                const missing = row.coverage === null || row.coverage === 0
+                const risk = !missing && row.gross_margin < 0
+                return (
+                  <tr key={id} id={`fila-${id}`}>
+                    <th scope="row">
+                      {row.name}
+                      <span className="label-condensed analysis-code">
+                        {code}
+                      </span>
+                    </th>
+                    {sales ? (
+                      <>
+                        <td>{formatMoneyChange(row.delta)}</td>
+                        <td>
+                          {row.prev_net_sales === 0 || row.delta_pct === null
+                            ? 'Sin comparación'
+                            : formatPercentChange(row.delta_pct)}
+                        </td>
+                        <td>{formatMoney(row.net_sales)}</td>
+                        <td>{formatMoney(row.prev_net_sales)}</td>
+                      </>
+                    ) : (
+                      <>
+                        <td className={risk ? 'risk-cell' : undefined}>
+                          {!missing && row.margin_pct !== null ? (
+                            <>
+                              {formatPercent(row.margin_pct)}
+                              {risk && (
+                                <span className="risk-label">Riesgo</span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="label-condensed">
+                              Sin datos de costo
+                            </span>
+                          )}
+                        </td>
+                        <td className={risk ? 'risk-cell' : undefined}>
+                          {!missing && formatMoney(row.gross_margin)}
+                        </td>
+                        <td>{formatMoney(row.net_sales)}</td>
+                        <td className="label-condensed">
+                          {missing
+                            ? 'Sin datos de costo'
+                            : `${new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 }).format(row.coverage!)} %`}
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </AnalysisTable>
         </>
       )}
-      <nav className="analysis-pagination" aria-label="Paginación">
-        {data.page > 1 && (
-          <Link
-            className="underline"
-            href={href({ pagina: String(data.page - 1) })}
-          >
-            Anterior
-          </Link>
-        )}
-        <span>
-          Página {data.page} de {data.pages} · {data.count} resultados
-        </span>
-        {data.page < data.pages && (
-          <Link
-            className="underline"
-            href={href({ pagina: String(data.page + 1) })}
-          >
-            Siguiente
-          </Link>
-        )}
-      </nav>
+      <AnalysisPagination
+        {...data}
+        href={(pagina) => href({ pagina: String(pagina) })}
+      />
       <footer className="dashboard-footer">
         Importes en MXN · Ventas completadas; canceladas y devueltas excluidas
       </footer>
