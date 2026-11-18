@@ -108,10 +108,53 @@ export type Insight = Omit<InsightRule, 'rule_key' | 'module'> & {
 
 type InsightDefaults = 'id' | 'rule_key' | 'status' | 'created_at' | 'updated_at'
 
+type Delivery = {
+  id: string
+  organization_id: string
+  kind: 'alert' | 'weekly_report'
+  dedupe_key: string
+  insight_id: string | null
+  recipient_user_id: string
+  recipient_email: string
+  status: 'pending' | 'sent' | 'failed'
+  attempts: number
+  last_error: string | null
+  sent_at: string | null
+  created_at: string
+  updated_at: string
+}
+type DeliveryRequired =
+  | 'organization_id'
+  | 'kind'
+  | 'dedupe_key'
+  | 'recipient_user_id'
+  | 'recipient_email'
+
 // Firmas añadidas tras la generación local de tipos.
 export type Database = GeneratedDatabase & {
   public: {
     Tables: {
+      deliveries: {
+        Row: Delivery
+        Insert: Pick<Delivery, DeliveryRequired> & Partial<Delivery>
+        Update: Partial<Delivery>
+        Relationships: [
+          {
+            foreignKeyName: 'deliveries_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'deliveries_organization_id_insight_id_fkey'
+            columns: ['organization_id', 'insight_id']
+            isOneToOne: false
+            referencedRelation: 'insights'
+            referencedColumns: ['organization_id', 'id']
+          },
+        ]
+      }
       insights: {
         Row: Insight
         Insert: Omit<Insight, InsightDefaults> & Partial<Pick<Insight, InsightDefaults>>
@@ -126,6 +169,19 @@ export type Database = GeneratedDatabase & {
       }
     }
     Functions: {
+      alert_recipients: {
+        Args: { p_organization_id: string }
+        Returns: { user_id: string; email: string }[]
+      }
+      pending_alerts: {
+        Args: { p_organization_id: string }
+        Returns: {
+          insight_id: string
+          recipient_user_id: string
+          recipient_email: string
+        }[]
+      }
+      enqueue_alerts: { Args: { p_organization_id: string }; Returns: boolean }
       evaluate_insight_rules: { Args: AsOfArgs; Returns: InsightRule[] }
       set_insight_status: {
         Args: { p_insight_id: string; p_status: Insight['status'] }

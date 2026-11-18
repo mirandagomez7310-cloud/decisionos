@@ -42,4 +42,11 @@ export async function handleComputeInsights(db: Client, job: Job) {
       rules: candidates.map(({ rule_key }) => rule_key),
     },
   })
+  try {
+    await checked(
+      db.rpc('enqueue_alerts', { p_organization_id: organization_id }),
+    )
+  } catch (error) {
+    console.error('No se pudieron encolar las alertas', error)
+  }
 }
