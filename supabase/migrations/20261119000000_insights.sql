@@ -100,7 +100,7 @@ with month_start as (
   select r.*, 'receivables_summary', '{}'::jsonb
   from public.receivables_summary(p_organization_id, p_as_of) s
   cross join lateral (values
-    ('receivables_concentration', 'cash', 'info', s.top5_share_pct > 50,
+    ('receivables_concentration', 'cash', 'info', s.customer_count > 5 and s.top5_share_pct > 50,
       jsonb_build_object('top5_share_pct', s.top5_share_pct, 'open_balance', s.open_balance)),
     ('overdue_share', 'cash', 'warning', s.overdue_pct > 30,
       jsonb_build_object('overdue_pct', s.overdue_pct, 'overdue_balance', s.overdue_balance,
@@ -154,6 +154,19 @@ alter table public.jobs add constraint jobs_kind_check check (kind in ('import',
 
 create unique index jobs_active_compute_insights_idx on public.jobs(organization_id)
   where kind = 'compute_insights' and status in ('queued', 'running');
+
+create function public.enqueue_insights(p_organization_id uuid) returns boolean
+language plpgsql security definer set search_path = '' as $$
+begin
+  insert into public.jobs(organization_id, kind, payload)
+  values (p_organization_id, 'compute_insights', '{}'::jsonb)
+  on conflict (organization_id) where kind = 'compute_insights' and status in ('queued', 'running')
+    do nothing;
+  return found;
+end;
+$$;
+revoke all on function public.enqueue_insights(uuid) from public, anon, authenticated;
+grant execute on function public.enqueue_insights(uuid) to service_role;
 
 create function public.enqueue_daily_insights() returns integer
 language plpgsql security definer set search_path = '' as $$

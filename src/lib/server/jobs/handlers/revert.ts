@@ -1,5 +1,12 @@
 import 'server-only'
-import { audit, checked, importId, type Client, type Job } from '../shared'
+import {
+  audit,
+  checked,
+  enqueueInsights,
+  importId,
+  type Client,
+  type Job,
+} from '../shared'
 export async function handleRevert(db: Client, job: Job) {
   const id = importId(job)
   await checked(
@@ -9,4 +16,5 @@ export async function handleRevert(db: Client, job: Job) {
     }),
   )
   await audit(db, job, 'imports.reverted')
+  await enqueueInsights(db, job.organization_id!)
 }

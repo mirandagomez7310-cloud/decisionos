@@ -8,6 +8,7 @@ import {
   audit,
   batches,
   checked,
+  enqueueInsights,
   importId,
   type Client,
   type Job,
@@ -167,4 +168,5 @@ export async function handleImport(db: Client, job: Job) {
       .eq('id', id),
   )
   await audit(db, job, 'imports.completed')
+  await enqueueInsights(db, organization_id)
 }

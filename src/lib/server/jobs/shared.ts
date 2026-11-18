@@ -1,6 +1,6 @@
 import 'server-only'
 import type { createAdminClient } from '@/lib/supabase/admin'
-import type { Database } from '@/lib/supabase/types'
+import type { Database, Json } from '@/lib/supabase/types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 type DecimalWrites<T> = {
   [K in keyof T]: number extends T[K] ? T[K] | string : T[K]
@@ -48,14 +48,38 @@ export function importId(job: Job): string {
     throw new Error('Job sin organización o import_id válido')
   return payload.import_id
 }
-export async function audit(db: Client, job: Job, action: string) {
+export async function audit(
+  db: Client,
+  job: Job,
+  action: string,
+  {
+    entity = 'imports',
+    entityId = importId(job),
+    data,
+  }: {
+    entity?: string
+    entityId?: string
+    data?: NonNullable<Json>
+  } = {},
+) {
   await checked(
     db.from('audit_log').insert({
       organization_id: job.organization_id!,
       actor_kind: 'system',
       action,
-      entity: 'imports',
-      entity_id: importId(job),
+      entity,
+      entity_id: entityId,
+      data,
     }),
   )
+}
+// No fatal: la importación ya está aplicada; si no se encola, el barrido diario recalcula.
+export async function enqueueInsights(db: Client, organizationId: string) {
+  try {
+    await checked(
+      db.rpc('enqueue_insights', { p_organization_id: organizationId }),
+    )
+  } catch (error) {
+    console.error('No se pudo encolar el cálculo de insights', error)
+  }
 }

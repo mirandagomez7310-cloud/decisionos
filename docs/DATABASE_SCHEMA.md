@@ -156,7 +156,7 @@ Un `fact` exige `generated_by = 'rule'` y toda regla exige `rule_key`. Hay una r
 | `low_cost_coverage` | profit | Mes cerrado | `metrics_summary.coverage < 80` | info |
 | `stale_inventory` | inventory | Corte | `inventory_summary.stale_share_pct > 20` | warning |
 | `high_risk_customers` | cash | Corte | Algún `receivables_by_customer.risk = 'alto'` | critical |
-| `receivables_concentration` | cash | Corte | `receivables_summary.top5_share_pct > 50` | info |
+| `receivables_concentration` | cash | Corte | `receivables_summary.customer_count > 5` y `top5_share_pct > 50` (con 5 clientes o menos la concentración siempre es 100 %) | info |
 | `overdue_share` | cash | Corte | `receivables_summary.overdue_pct > 30` | warning |
 
 `evidence` indica `metric`, `from`, `to`, `prev_from` y `prev_to`. Las fechas previas son nulas para el corte. Para productos con margen negativo y clientes de alto riesgo añade el `count` total y hasta 20 `ids`, por menor margen o mayor saldo vencido, con desempate por ID. `metric_snapshot` usa los nombres de columna de las métricas y, para esas dos reglas, conserva el menor margen o el mayor saldo vencido con el nivel de riesgo.

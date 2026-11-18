@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(23);
+select plan(26);
 
 insert into public.organizations(id, name, slug) values
   ('51000000-0000-0000-0000-000000000001', 'A', 'insights-a'),
@@ -122,6 +122,9 @@ select results_eq(
 );
 update public.jobs set status = 'running' where organization_id = '51000000-0000-0000-0000-000000000001' and kind = 'compute_insights';
 select is(public.enqueue_daily_insights(), 0, 'No duplica jobs activos en cola o en ejecución');
+update public.jobs set status = 'done' where organization_id = '51000000-0000-0000-0000-000000000002' and kind = 'compute_insights';
+select is(public.enqueue_insights('51000000-0000-0000-0000-000000000002'), true, 'Encola el cálculo para la organización');
+select is(public.enqueue_insights('51000000-0000-0000-0000-000000000002'), false, 'No duplica un cálculo en cola');
 reset role;
 
 insert into public.insights(id, organization_id, module, kind, severity, title, body, evidence,
@@ -139,6 +142,7 @@ select results_eq($$select id from public.insights$$::text, $$values ('51000000-
   'El analyst de A solo ve los insights de su organización');
 select throws_ok($$select * from public.evaluate_insight_rules('51000000-0000-0000-0000-000000000001', date '2026-11-18')$$::text, '42501', null::text, 'authenticated no puede evaluar reglas');
 select throws_ok($$select public.enqueue_daily_insights()$$::text, '42501', null::text, 'authenticated no puede encolar el cálculo diario');
+select throws_ok($$select public.enqueue_insights('51000000-0000-0000-0000-000000000001')$$::text, '42501', null::text, 'authenticated no puede encolar el cálculo de su organización');
 select is((public.set_insight_status('51000000-0000-0000-0000-000000000051', 'seen')).status, 'seen', 'El analyst cambia el estado');
 select throws_ok($$select public.set_insight_status('51000000-0000-0000-0000-000000000052', 'seen')$$::text, '42501', null::text, 'El analyst no puede cambiar un insight de B');
 select throws_ok($$select public.set_insight_status('51000000-0000-0000-0000-000000000051', 'invalid')$$::text, '22023', null::text, 'Se rechaza un estado inválido');

@@ -5,12 +5,14 @@ const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   run: vi.fn(),
   revert: vi.fn(),
+  compute: vi.fn(),
 }))
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ rpc: mocks.rpc, from: mocks.from }),
 }))
 vi.mock('./handlers/import', () => ({ handleImport: mocks.run }))
 vi.mock('./handlers/revert', () => ({ handleRevert: mocks.revert }))
+vi.mock('./handlers/insights', () => ({ handleComputeInsights: mocks.compute }))
 beforeEach(() => vi.resetAllMocks())
 const job = {
   id: 'job',
@@ -28,7 +30,7 @@ it('despacha, completa y respeta maxJobs', async () => {
   expect(mocks.run).toHaveBeenCalledOnce()
   expect(mocks.rpc).toHaveBeenNthCalledWith(1, 'claim_job', {
     worker: 'test',
-    kinds: ['import', 'revert_import'],
+    kinds: ['import', 'revert_import', 'compute_insights'],
   })
   expect(mocks.rpc).toHaveBeenNthCalledWith(2, 'complete_job', {
     id: 'job',
@@ -64,4 +66,33 @@ it('registra el fallo terminal con filtro de organización y continúa', async (
     last_error: 'fallo de escritura',
   })
   expect(mocks.revert).toHaveBeenCalledOnce()
+})
+
+it('despacha el cálculo tras importar y registra su fallo terminal sin tocar imports', async () => {
+  const insightJob = {
+    ...job,
+    id: 'insight-job',
+    kind: 'compute_insights',
+    payload: {},
+  }
+  mocks.rpc
+    .mockResolvedValueOnce({ data: job, error: null })
+    .mockResolvedValueOnce({ data: null, error: null })
+    .mockResolvedValueOnce({ data: insightJob, error: null })
+    .mockResolvedValue({ data: null, error: null })
+  mocks.compute.mockRejectedValueOnce(new Error('fallo de cálculo'))
+
+  await runPendingJobs()
+
+  expect(mocks.run).toHaveBeenCalledOnce()
+  expect(mocks.compute).toHaveBeenCalledExactlyOnceWith(
+    expect.anything(),
+    insightJob,
+  )
+  expect(mocks.rpc).toHaveBeenNthCalledWith(4, 'complete_job', {
+    id: insightJob.id,
+    status: 'failed',
+    last_error: 'fallo de cálculo',
+  })
+  expect(mocks.from).not.toHaveBeenCalled()
 })
