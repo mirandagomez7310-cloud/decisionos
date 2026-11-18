@@ -67,9 +67,12 @@ test('owner pide recomendaciones con evidencia y vuelve a usar la caché', async
   await expect(page).toHaveURL(
     (url) => url.pathname + url.search + url.hash === href,
   )
-  await expect(page.locator('article:target').getByRole('heading')).toHaveText(
+  // Next navega con pushState y el navegador no actualiza :target; se busca el ancla por id.
+  const cited = page.locator(`article${new URL(href!, 'http://x').hash}`)
+  await expect(cited.getByRole('heading')).toHaveText(
     (await citation.textContent())!,
   )
+  await expect(cited).toBeInViewport()
   await expect(quota).toHaveText('9 de 10 consultas disponibles hoy')
   await request.click()
   await expect(section.getByRole('status')).toHaveText(
