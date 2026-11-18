@@ -692,6 +692,55 @@
   border-color: var(--foreground);
   font-weight: 600;
 }
+.insight-list {
+  margin-block: 16px;
+  border-top: 1px solid var(--upright);
+  overflow-wrap: anywhere;
+}
+.insight-list > li {
+  padding-block: 16px;
+  border-bottom: 1px solid var(--upright);
+}
+.insight-list h2,
+.insight-list h3 {
+  font-weight: 600;
+}
+.insight-list article {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+.insight-meta,
+.insight-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.insight-meta .risk-label,
+.insight-list > li > .risk-label {
+  margin-left: 0;
+}
+.insight-info {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.insight-actions button {
+  border: 1px solid var(--upright);
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.insight-filter-skeleton {
+  flex: 1 1 280px;
+  height: 48px;
+  background: var(--surface);
+}
+@media (max-width: 480px) {
+  .insight-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
 .analysis-summary {
   margin-block: 16px;
 }

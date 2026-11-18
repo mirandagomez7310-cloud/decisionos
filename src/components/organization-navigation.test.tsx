@@ -4,8 +4,26 @@ import { OrganizationNavigation } from './organization-navigation'
 const route = vi.hoisted(() => ({ pathname: '/o/demo/catalog/customers' }))
 vi.mock('next/navigation', () => ({ usePathname: () => route.pathname }))
 afterEach(cleanup)
+it('muestra Diagnóstico después de Inicio con el total y la ruta activa', () => {
+  route.pathname = '/o/demo/insights'
+  const { rerender } = render(
+    <OrganizationNavigation slug="demo" canManage={false} newInsights={3} />,
+  )
+  const insights = screen.getByRole('link', { name: 'Diagnóstico 3' })
+  expect(screen.getByRole('link', { name: 'Inicio' }).nextElementSibling).toBe(
+    insights,
+  )
+  expect(insights).toHaveAttribute('href', '/o/demo/insights')
+  expect(insights).toHaveAttribute('aria-current', 'page')
+  rerender(
+    <OrganizationNavigation slug="demo" canManage={false} newInsights={0} />,
+  )
+  expect(insights).toHaveAccessibleName('Diagnóstico')
+})
+
 describe('navegación de organización', () => {
   it('marca el módulo activo incluso en sus rutas hijas y al navegar', () => {
+    route.pathname = '/o/demo/catalog/customers'
     const { rerender } = render(
       <OrganizationNavigation slug="demo" canManage={false} />,
     )

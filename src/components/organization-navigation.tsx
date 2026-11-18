@@ -5,9 +5,11 @@ import { useEffect, useRef } from 'react'
 export function OrganizationNavigation({
   slug,
   canManage,
+  newInsights = 0,
 }: {
   slug: string
   canManage: boolean
+  newInsights?: number
 }) {
   const pathname = usePathname()
   const nav = useRef<HTMLElement>(null)
@@ -21,6 +23,11 @@ export function OrganizationNavigation({
   const base = '/o/' + slug
   const links = [
     ['Inicio', '', ''],
+    [
+      newInsights > 0 ? `Diagnóstico ${newInsights}` : 'Diagnóstico',
+      '/insights',
+      '/insights',
+    ],
     ['Ventas', '/sales', '/sales'],
     ['Margen', '/margin', '/margin'],
     ['Inventario', '/inventory', '/inventory'],
