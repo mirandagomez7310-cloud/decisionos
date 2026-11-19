@@ -80,14 +80,14 @@ it('un periodo vacío con historial conserva cifras en cero', async () => {
   })
   expect(screen.getAllByText('$0.00')).toHaveLength(2)
   expect(screen.getAllByText('Sin ventas en el periodo')).toHaveLength(2)
-  expect(screen.queryByText('Aún no hay datos')).not.toBeInTheDocument()
+  expect(screen.queryByText('Aún no hay ventas')).not.toBeInTheDocument()
 })
 it.each(['owner', 'admin', 'analyst', 'viewer'])(
   'vacío respeta el rol %s',
   async (role) => {
     await show({ ...data, role, hasSales: false })
     expect(
-      screen.getByRole('heading', { name: 'Aún no hay datos' }),
+      screen.getByRole('heading', { name: 'Aún no hay ventas' }),
     ).toBeInTheDocument()
     expect(
       Boolean(screen.queryByRole('link', { name: 'Importar ventas' })),

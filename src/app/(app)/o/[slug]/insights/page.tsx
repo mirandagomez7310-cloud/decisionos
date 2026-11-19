@@ -95,6 +95,7 @@ export default async function Page({
         <EmptyImport
           slug={slug}
           role={data.role}
+          title="Aún no hay datos"
           label="Importar datos"
           subject="los datos"
         >

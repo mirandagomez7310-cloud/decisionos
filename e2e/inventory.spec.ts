@@ -110,7 +110,7 @@ test('owner de una organización sin inventario ve cómo importarlo', async ({
   await page.context().clearCookies()
   await login(page, userEmail, `/o/${orgSlug}/inventory`)
   await expect(
-    page.getByRole('heading', { name: 'Aún no hay datos' }),
+    page.getByRole('heading', { name: 'Aún no hay inventario' }),
   ).toBeVisible()
   await expect(
     page.getByRole('link', { name: 'Importar inventario' }),
