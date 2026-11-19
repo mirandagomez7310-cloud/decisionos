@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { sendMail } from '@/lib/server/mail'
 import { beforeEach, expect, it, vi } from 'vitest'
 import type { Client, Job } from '../shared'
@@ -105,6 +106,9 @@ it('agrupa, conserva intentos por insight y sigue tras el fallo del primer desti
     1,
     expect.objectContaining({
       to: 'owner@example.com',
+      idempotencyKey: createHash('sha256')
+        .update('org\nalert:first:owner\nalert:second:owner')
+        .digest('hex'),
       text: expect.stringMatching(/first[\s\S]+second/),
     }),
   )

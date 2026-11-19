@@ -8,8 +8,8 @@ test('owner recibe un solo resumen semanal con cobranza vencida', async ({
   dashboardOwner: { orgSlug, userEmail },
 }) => {
   test.setTimeout(240000)
-  const secret = process.env.JOBS_SECRET
-  if (!secret) throw new Error('Falta JOBS_SECRET')
+  const secret = process.env.CRON_SECRET
+  if (!secret) throw new Error('Falta CRON_SECRET')
   const imports = `/o/${orgSlug}/imports/new`
   const mailpit = new URL('/api/v1/', toolingEnv.mailpitUrl)
   const search = new URL('search', mailpit)

@@ -19,7 +19,7 @@ export default defineConfig({
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test',
       SUPABASE_SECRET_KEY: 'sb_secret_test',
       AI_DRIVER: 'fake',
-      JOBS_SECRET: 'jobs_test_secret',
+      CRON_SECRET: 'cron_test_secret',
     },
   },
 })

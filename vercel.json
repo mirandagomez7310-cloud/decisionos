@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "schedules": {
+    "daily-insights": { "schedule": "0 6 * * *", "timezone": "America/Mexico_City", "path": "/api/jobs/run" },
+    "weekly-reports": { "schedule": "0 7 * * 1", "timezone": "America/Mexico_City", "path": "/api/jobs/run" },
+    "jobs-sweep": { "schedule": "*/30 * * * *", "timezone": "America/Mexico_City", "path": "/api/jobs/run" }
+  }
+}
