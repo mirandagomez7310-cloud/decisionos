@@ -70,6 +70,7 @@ export async function InventoryPage({
         <EmptyImport
           slug={slug}
           role={role}
+          title="Aún no hay inventario"
           label="Importar inventario"
           subject="el inventario"
         >

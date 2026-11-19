@@ -115,7 +115,7 @@ test('organización sin ventas ofrece importar al owner', async ({
   await page.context().clearCookies()
   await login(page, userEmail, `/o/${orgSlug}`)
   await expect(
-    page.getByRole('heading', { name: 'Aún no hay datos' }),
+    page.getByRole('heading', { name: 'Aún no hay ventas' }),
   ).toBeVisible()
   await expect(
     page.getByRole('link', { name: 'Importar ventas' }),

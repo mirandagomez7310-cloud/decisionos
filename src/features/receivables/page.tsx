@@ -80,6 +80,7 @@ export async function ReceivablesPage({
           <EmptyImport
             slug={slug}
             role={data.role}
+            title="Aún no hay cuentas por cobrar"
             label="Importar cuentas por cobrar"
             subject="las cuentas por cobrar"
           >

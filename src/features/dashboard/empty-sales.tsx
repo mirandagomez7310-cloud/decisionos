@@ -6,6 +6,7 @@ export function EmptySales({ slug, role }: { slug: string; role: OrgRole }) {
     <EmptyImport
       slug={slug}
       role={role}
+      title="Aún no hay ventas"
       label="Importar ventas"
       subject="las ventas"
     >

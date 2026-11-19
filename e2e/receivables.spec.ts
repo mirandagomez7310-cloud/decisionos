@@ -95,7 +95,7 @@ test('owner de una organización sin cuentas ve cómo importarlas', async ({
   await page.context().clearCookies()
   await login(page, userEmail, `/o/${orgSlug}/receivables`)
   await expect(
-    page.getByRole('heading', { name: 'Aún no hay datos' }),
+    page.getByRole('heading', { name: 'Aún no hay cuentas por cobrar' }),
   ).toBeVisible()
   await expect(
     page.getByRole('link', { name: 'Importar cuentas por cobrar' }),
