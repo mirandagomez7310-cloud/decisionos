@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { authSchema, sanitizeNext } from './schemas'
+import { authSchema, confirmRedirect, sanitizeNext } from './schemas'
 describe('auth schema', () => {
   it('accepts credentials and rejects malformed inputs', () => {
     expect(
@@ -36,5 +36,22 @@ describe('auth schema', () => {
         next: '//evil.test',
       }).next,
     ).toBe('/')
+  })
+})
+
+describe('confirmRedirect', () => {
+  it.each([
+    ['/invitations/token', '/invitations/token'],
+    ['//evil.com', '/'],
+    ['https://evil.com/x', '/'],
+    [
+      'https://app.example/invitations/token?tab=one&view=all',
+      '/invitations/token?tab=one&view=all',
+    ],
+    ['javascript:alert(1)', '/'],
+    ['', '/'],
+    [null, '/'],
+  ])('normalizes %s to %s', (next, expected) => {
+    expect(confirmRedirect(next, 'https://app.example')).toBe(expected)
   })
 })
