@@ -137,7 +137,8 @@ async function seed() {
         customers[group < 3 ? (day + group) % 5 : 5 + ((day + group) % 20)]!
       const id = randomUUID()
       const declining = group === 0 && sold_on.startsWith(lastMonth)
-      const quantity = (group === 0 && !declining ? 80 : 8) + pick(3)
+      // Mismo volumen por categoría: si una domina, su caída arrastra el total del mes.
+      const quantity = (declining ? 8 : 20) + pick(3)
       const total = quantity * product.list_price
       const index = day * categories.length + group
       const unit_cost =
