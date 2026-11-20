@@ -1,5 +1,5 @@
 import { env } from '@/env'
-import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sendMail } from './index'
 
 const message = {
@@ -10,6 +10,7 @@ const message = {
 }
 const fetchMock = vi.fn()
 const driver = env.MAIL_DRIVER
+const resendKey = env.RESEND_API_KEY
 
 beforeEach(() => {
   env.MAIL_DRIVER = 'mailpit'
@@ -18,7 +19,68 @@ beforeEach(() => {
 })
 afterEach(() => {
   env.MAIL_DRIVER = driver
+  env.RESEND_API_KEY = resendKey
   vi.unstubAllGlobals()
+})
+
+describe('Resend', () => {
+  beforeEach(() => {
+    env.MAIL_DRIVER = 'resend'
+    env.RESEND_API_KEY = 're_test'
+  })
+
+  it('envía el mensaje con idempotencia y límite de tiempo', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 202 }))
+    expect(
+      await sendMail({ ...message, idempotencyKey: 'org:delivery' }),
+    ).toEqual({
+      ok: true,
+    })
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      'https://api.resend.com/emails',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer re_test',
+          'Content-Type': 'application/json',
+          'Idempotency-Key': 'org:delivery',
+        },
+        body: JSON.stringify({
+          from: env.MAIL_FROM,
+          to: [message.to],
+          subject: 'Alerta  Bcc: intruso',
+          html: message.html,
+          text: message.text,
+        }),
+        signal: expect.any(AbortSignal),
+      },
+    )
+  })
+
+  it('devuelve errores de HTTP y red sin detalles del proveedor', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response('Detalle interno', { status: 429 }))
+      .mockRejectedValueOnce(new Error('Red caída'))
+    expect(await sendMail(message)).toEqual({
+      ok: false,
+      error: 'resend-http-429',
+    })
+    expect(fetchMock.mock.calls[0]?.[1].headers).not.toHaveProperty(
+      'Idempotency-Key',
+    )
+    expect(await sendMail(message)).toEqual({
+      ok: false,
+      error: 'resend-network-error',
+    })
+  })
+
+  it('rechaza un destinatario inválido antes de llamar a Resend', async () => {
+    expect(await sendMail({ ...message, to: 'inválido' })).toEqual({
+      ok: false,
+      error: 'invalid-recipient',
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
 })
 
 it('sin driver no hace peticiones', async () => {

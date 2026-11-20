@@ -1,4 +1,5 @@
 import 'server-only'
+import { createHash } from 'node:crypto'
 import { sendMail } from '@/lib/server/mail'
 import type { Database } from '@/lib/supabase/types'
 import { checked, type Client } from './shared'
@@ -26,7 +27,13 @@ export async function sendDelivery(
   if (!deliveries || deliveries.length !== rows.length)
     throw new Error('No se pudieron preparar todas las entregas')
 
-  const result = await sendMail(message)
+  // Clave del grupo completo: si un reintento agrupa otras alertas, Resend rechazaría la misma clave con otro contenido (409).
+  const idempotencyKey = createHash('sha256')
+    .update(
+      [organization_id, ...rows.map((row) => row.dedupe_key).sort()].join('\n'),
+    )
+    .digest('hex')
+  const result = await sendMail({ ...message, idempotencyKey })
   if (!result.ok && result.error === 'mail-disabled') return 'disabled'
 
   const sentAt = new Date().toISOString()

@@ -15,8 +15,9 @@ test.describe('autenticación y organizaciones', () => {
     await login(page, email('owner'))
     await expect(page).toHaveURL('/')
   })
-  test('registro conserva next hacia invitación', async ({ page }) => {
+  test('registro conserva next hacia invitación', async ({ page, request }) => {
     const next = '/invitations/' + 'a'.repeat(64)
+    const userEmail = `signup-${crypto.randomUUID()}@example.com`
     await page.goto('/login?next=' + encodeURIComponent(next))
     await page
       .getByRole('link', { name: 'Crear una cuenta', exact: true })
@@ -24,16 +25,53 @@ test.describe('autenticación y organizaciones', () => {
     await expect(page).toHaveURL('/signup?next=' + encodeURIComponent(next))
     await page
       .getByLabel('Correo electrónico', { exact: true })
-      .fill(`signup-${crypto.randomUUID()}@example.com`)
+      .fill(userEmail)
     await page.getByLabel('Contraseña', { exact: true }).fill(password)
     await page
       .getByRole('button', { name: 'Crear cuenta', exact: true })
       .click()
     await expect(
+      page.getByRole('alert').filter({ hasText: 'Revisa tu correo' }),
+    ).toBeVisible()
+
+    const mailpit = new URL(
+      '/api/v1/',
+      process.env.MAILPIT_URL ?? 'http://127.0.0.1:54324',
+    )
+    const search = new URL('search', mailpit)
+    search.searchParams.set('query', `to:"${userEmail}"`)
+    let messageId: string | undefined
+    await expect
+      .poll(async () => {
+        const response = await request.get(search.href)
+        await expect(response).toBeOK()
+        const { messages } = (await response.json()) as {
+          messages: { ID: string }[] | null
+        }
+        messageId = messages?.[0]?.ID
+        return messageId
+      }, { timeout: 10000 })
+      .toBeTruthy()
+
+    const response = await request.get(
+      new URL(`message/${messageId}`, mailpit).href,
+    )
+    await expect(response).toBeOK()
+    const { HTML } = (await response.json()) as { HTML: string }
+    const href = HTML.match(/href="([^"]*\/auth\/confirm[^"]*)"/)?.[1]
+    if (!href) throw new Error('No se encontró el enlace de confirmación.')
+    await page.goto(href.replaceAll('&amp;', '&'))
+    await expect(page).toHaveURL(next)
+  })
+  test('un enlace de confirmación inválido muestra un aviso', async ({
+    page,
+  }) => {
+    await page.goto('/auth/confirm?token_hash=x&type=email')
+    await expect(page).toHaveURL('/login?error=confirmation')
+    await expect(
       page
         .getByRole('alert')
-        .filter({ hasText: 'Revisa tu correo' })
-        .or(page.getByRole('heading', { name: 'Aceptar invitación' })),
+        .filter({ hasText: 'El enlace de confirmación caducó o ya se usó' }),
     ).toBeVisible()
   })
   test('crea organización y rechaza slug repetido', async ({ page }) => {

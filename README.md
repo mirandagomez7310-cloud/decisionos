@@ -41,6 +41,16 @@ npm.cmd run dev                   # http://localhost:3000
 
 Las tres variables se documentan en [.env.example](.env.example). Para la secuencia completa de verificación (pgTAP, build, E2E y Lighthouse): `powershell -NoProfile -File scripts/verify.ps1`.
 
+## Ver la demo en local
+
+Con Node 24, las dependencias instaladas y Docker Desktop abierto, ejecuta [scripts/demo.ps1](scripts/demo.ps1) desde la raíz del repo.
+
+```powershell
+powershell -NoProfile -File scripts/demo.ps1
+```
+
+Abre [la app local](http://127.0.0.1:3000) e inicia sesión con `demo@decisionos.local` y `demo-decisionos-2026`. Cada ejecución reemplaza la organización `distribuidora-demo` y sus datos de ejemplo.
+
 ## Scripts
 
 `dev` · `build` · `start` · `typecheck` · `lint` · `format` · `test` · `test:db` (pgTAP) · `test:e2e` (Playwright, requiere `build`) · `db:types` · `lhci`.

@@ -11,7 +11,10 @@ Una fase por sesión de trabajo. Al empezar una fase, el estado se toma de la no
 | **4 · Inventory y Cash** | Capital inmovilizado y riesgo de clientes | Rotación y días de inventario, inventario sin movimiento, antigüedad de saldos, concentración y riesgo por cliente | Mismos criterios que la fase 3 |
 | **5 · Insights, Reports y Alerts** | De métricas a diagnóstico | Migración `0005_insights`; motor de reglas (hechos) que genera insights; estados (visto, descartado, hecho); alertas por correo; informe periódico | Cada insight muestra su evidencia; test de reglas con datos de seed; `/security-review` (envío de correo) |
 | **6 · AI Business Advisor** | Priorizar y explicar | Adaptador LLM en `lib/server/ai/` (proveedor y modelo decididos con documentación vigente); hipótesis y sugerencias citando insights; caché por organización y periodo; límites de uso | El LLM nunca produce una cifra que no esté en `metric_snapshot`; test que lo comprueba; evaluación manual con un propietario |
-| **7 · Plataforma** | Crecer sin reconstruir | Salida a producción: proyecto Supabase en la nube y despliegue en Vercel (D-028); API `v1` con tokens por organización; suscripciones y planes; primera integración directa con un sistema origen real | Decidido con datos de las fases 2 a 6 |
+| **7a · Producción** | Desplegar la aplicación | Demo local y salida a producción con Supabase, Vercel y Resend (D-028, D-034 a D-036) | Demo reproducible y despliegue verificado |
+| **7b · API** | Dar acceso programático a los datos | API `v1` con tokens por organización | Acceso limitado a la organización del token |
+| **7c · Suscripciones** | Cobrar por el servicio | Suscripciones y planes (D-018) | Pasarela y planes decididos con datos de uso |
+| **7d · Primera integración** | Automatizar la entrada de datos | Primera integración directa con un sistema origen real (D-014) | Origen elegido según el uso real |
 
 ## Fuera del roadmap hasta nueva decisión
 

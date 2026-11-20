@@ -17,6 +17,19 @@ export function sanitizeNext(value: unknown): string {
     return '/'
   }
 }
+export function confirmRedirect(next: string | null, appUrl: string): string {
+  if (!next) return '/'
+  if (next.startsWith('/')) return sanitizeNext(next)
+  try {
+    const url = new URL(next)
+    if (url.origin === new URL(appUrl).origin)
+      return sanitizeNext(url.pathname + url.search)
+  } catch {
+    return '/'
+  }
+  return '/'
+}
+
 export const authSchema = z.object({
   email: z.email('Introduce un correo válido.').max(254),
   password: z

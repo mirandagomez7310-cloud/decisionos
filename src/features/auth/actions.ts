@@ -1,5 +1,6 @@
 'use server'
 import { redirect } from 'next/navigation'
+import { env } from '@/env'
 import { createClient } from '@/lib/supabase/server'
 import { authSchema } from './schemas'
 export async function authenticate(mode: 'login' | 'signup', input: unknown) {
@@ -20,7 +21,12 @@ export async function authenticate(mode: 'login' | 'signup', input: unknown) {
     const { data, error } =
       mode === 'login'
         ? await supabase.auth.signInWithPassword(credentials)
-        : await supabase.auth.signUp(credentials)
+        : await supabase.auth.signUp({
+            ...credentials,
+            options: {
+              emailRedirectTo: new URL(parsed.data.next, env.APP_URL).toString(),
+            },
+          })
     if (error)
       return {
         ok: false,

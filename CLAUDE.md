@@ -2,7 +2,7 @@
 
 # DecisionOS
 
-SaaS B2B de inteligencia empresarial para distribuidoras y mayoristas en México. Fase actual: **1 · Esqueleto y tenants** (scaffold hecho; migración `0001_core`, CI y auth en curso). Ver `docs/ROADMAP.md`.
+SaaS B2B de inteligencia empresarial para distribuidoras y mayoristas en México. Fase actual: **7a · Producción**. Ver `docs/ROADMAP.md`.
 
 ## Documentación (leer antes de tocar el área)
 `docs/PRODUCT_BRIEF.md` (qué es y qué no) · `docs/ARCHITECTURE.md` (capas, stack, multi-tenant, riesgos) · `docs/DATABASE_SCHEMA.md` (tablas, RLS, migraciones) · `docs/DESIGN_SYSTEM.md` (principios visuales; los tokens irán en `DESIGN.md`) · `docs/ROADMAP.md` (fases) · `docs/DECISIONS.md` (ADR: aceptadas, propuestas, pendientes).
@@ -11,6 +11,8 @@ SaaS B2B de inteligencia empresarial para distribuidoras y mayoristas en México
 Next.js 16 App Router · TypeScript strict · Supabase (Postgres + Auth + Storage) · shadcn/ui (radix-nova) + Tailwind 4 · TanStack Table v9 · react-hook-form + Zod 4 · Vitest 5 · Playwright · pgTAP · oxlint · Node 24 · npm.
 
 ## Comandos
+Demo local con datos de ejemplo: `powershell -NoProfile -File scripts/demo.ps1`.
+
 `npm run dev | build | typecheck | lint | format | test | test:db | test:e2e | db:types | lhci`. En PowerShell 5.1, `npm.cmd`/`npx.cmd`. Con Docker Desktop: `npx supabase start`, `.env.local` con las claves de `supabase status -o env` (API_URL, PUBLISHABLE_KEY, SECRET_KEY) y exportadas en la shell para `test:e2e` y `lhci`; `test:e2e` necesita `build` previo (usa `next start`). Desde Git Bash, `npx playwright` falla por el espacio de `Program Files`: `node node_modules/@playwright/test/cli.js test`.
 
 ## Flujo de trabajo (D-023)

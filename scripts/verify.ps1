@@ -14,7 +14,7 @@ $env:MAIL_DRIVER = 'mailpit'
 $env:AI_DRIVER = 'fake'
 $env:APP_URL = 'http://127.0.0.1:3000'
 $env:PLAYWRIGHT_BROWSERS_PATH = Join-Path $env:TEMP 'decisionos-playwright'
-if (-not $env:JOBS_SECRET) { $env:JOBS_SECRET = 'local-jobs-secret-decisionos-2026' }
+if (-not $env:CRON_SECRET) { $env:CRON_SECRET = 'local-cron-secret-decisionos-2026' }
 # Base limpia como en CI: los datos del E2E anterior rompen las aserciones de tabla completa.
 npx.cmd supabase db reset 2>&1 | Out-Null
 $results = @()
