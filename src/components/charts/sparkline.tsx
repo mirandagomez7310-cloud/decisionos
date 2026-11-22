@@ -19,8 +19,9 @@ export function Sparkline({
 }) {
   if (current.length < 2 && previous.length < 2) return null
   const values = [...current, ...previous].map((point) => point.net_sales)
-  const min = Math.min(0, ...values)
-  const max = Math.max(1, ...values)
+  // Escala al rango de los datos: la sparkline cuenta la forma; la cifra exacta va en la tarjeta.
+  const min = Math.min(...values)
+  const max = Math.max(min + 1, ...values)
   const count = Math.max(current.length, previous.length)
   const line = points(current, min, max, count)
   const last = line.at(-1)?.split(',')[0]

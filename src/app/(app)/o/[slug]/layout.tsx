@@ -26,13 +26,11 @@ export default async function OrganizationLayout({
     organization.id,
     'new',
   )
-  const navigation = (
-    <OrganizationNavigation
-      slug={slug}
-      newInsights={count ?? 0}
-      canManage={role === 'owner' || role === 'admin'}
-    />
-  )
+  const navProps = {
+    slug,
+    newInsights: count ?? 0,
+    canManage: role === 'owner' || role === 'admin',
+  }
   return (
     <div className="app-frame">
       <aside className="app-sidebar material">
@@ -40,14 +38,22 @@ export default async function OrganizationLayout({
           <span className="wordmark">DecisionOS</span>
           <span className="sidebar-org">{organization.name}</span>
         </div>
-        {navigation}
+        <OrganizationNavigation {...navProps} />
         <SidebarAccount />
       </aside>
       <main id="main-content" tabIndex={-1} className="work-content">
         {children}
       </main>
-      <MobileTabBar slug={slug} newInsights={count ?? 0}>
-        {navigation}
+      <MobileTabBar
+        slug={slug}
+        organization={organization.name}
+        newInsights={count ?? 0}
+      >
+        {/* Las cuatro primeras secciones ya están en la barra de pestañas. */}
+        <OrganizationNavigation
+          {...navProps}
+          omit={['', '/insights', '/sales', '/margin']}
+        />
         <SidebarAccount />
       </MobileTabBar>
     </div>

@@ -84,16 +84,22 @@ export function OrganizationNavigation({
   slug,
   canManage,
   newInsights = 0,
+  omit = [],
 }: {
   slug: string
   canManage: boolean
   newInsights?: number
+  /** Secciones que ya están en la barra de pestañas. */
+  omit?: string[]
 }) {
   const current = useCurrent(slug)
   const base = '/o/' + slug
+  const groups = items(canManage)
+    .map(([heading, links]) => [heading, links.filter((link) => !omit.includes(link.section))] as const)
+    .filter(([, links]) => links.length)
   return (
     <nav aria-label="Organización" className="organization-nav">
-      {items(canManage).map(([heading, links]) => (
+      {groups.map(([heading, links]) => (
         <div key={heading} className="nav-group">
           <h2 className="nav-heading">{heading}</h2>
           <ul>
@@ -121,10 +127,12 @@ export function OrganizationNavigation({
 /** Barra de pestañas de iOS: cuatro destinos frecuentes y «Más» con el resto, la cuenta y salir. */
 export function MobileTabBar({
   slug,
+  organization,
   newInsights = 0,
   children,
 }: {
   slug: string
+  organization: string
   newInsights?: number
   children: React.ReactNode
 }) {
@@ -132,8 +140,18 @@ export function MobileTabBar({
   const pathname = usePathname()
   const sheet = useRef<HTMLDialogElement>(null)
   useEffect(() => sheet.current?.close(), [pathname])
+  // Cierra también al tocar el enlace de la página actual, que no cambia la ruta.
+  useEffect(() => {
+    const dialog = sheet.current
+    const close = (event: MouseEvent) => {
+      if ((event.target as Element).closest('a')) dialog?.close()
+    }
+    dialog?.addEventListener('click', close)
+    return () => dialog?.removeEventListener('click', close)
+  }, [])
   const base = '/o/' + slug
   const tabs = items(false).flatMap(([, links]) => links).slice(0, 4)
+  const inMore = !tabs.some(({ section }) => current(section))
   return (
     <>
       <nav aria-label="Principal" className="tabbar material">
@@ -147,6 +165,7 @@ export function MobileTabBar({
         <button
           type="button"
           aria-haspopup="dialog"
+          data-active={inMore || undefined}
           onClick={() => sheet.current?.showModal()}
         >
           <Ellipsis aria-hidden="true" />
@@ -161,7 +180,10 @@ export function MobileTabBar({
         {...{ closedby: 'any' }}
       >
         <div className="more-sheet-head material">
-          <h2 id="more-sheet-title">Más</h2>
+          <div>
+            <h2 id="more-sheet-title">Más</h2>
+            <p className="sidebar-org">{organization}</p>
+          </div>
           <button type="button" onClick={() => sheet.current?.close()}>
             Listo
           </button>

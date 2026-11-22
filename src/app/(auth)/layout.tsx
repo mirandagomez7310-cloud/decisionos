@@ -17,17 +17,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <span className="wordmark">DecisionOS</span>
       </header>
       <section className="auth-hero" aria-label="Vista de ejemplo del resumen">
+        <p className="auth-hero-label">Ventas netas · noviembre</p>
         <p className="auth-hero-figure">$1,284,500</p>
         <div className="auth-hero-meta">
-          <span>Ventas netas · noviembre</span>
           <span className="metric-comparison">
             <strong data-trend="up">
               <ArrowUpRight aria-hidden="true" />
               +8.4 %
             </strong>
           </span>
-          <CoverageRing value={83} />
-          <span>83 % con costo</span>
+          <span className="auth-coverage">
+            <CoverageRing value={83} />
+            83 % con costo
+          </span>
           <span className="sample-tag">Datos de ejemplo</span>
         </div>
         <p className="auth-tagline">Dónde pierdes dinero y qué decidir primero.</p>

@@ -10,6 +10,7 @@ import { Sparkline } from '@/components/charts/sparkline'
 import { CoverageRing } from '@/components/charts/coverage-ring'
 import {
   formatMoney,
+  formatMoneyWhole,
   formatMoneyChange,
   formatPercent,
   formatPercentChange,
@@ -19,7 +20,9 @@ import {
 import type { MetricMovement } from '@/lib/supabase/types'
 
 function Change({ value, children }: { value: number | null; children: string }) {
-  const trend = value === null || value === 0 ? undefined : value > 0 ? 'up' : 'down'
+  // Tendencia sobre el valor que se muestra (un decimal): «+0.0» no lleva flecha.
+  const shown = value === null ? 0 : Math.round(value * 10) / 10
+  const trend = shown === 0 ? undefined : shown > 0 ? 'up' : 'down'
   return (
     <strong data-trend={trend}>
       {trend === 'up' && <ArrowUpRight aria-hidden="true" />}
@@ -173,7 +176,7 @@ export default async function Page({
             <h2>Ventas netas</h2>
             <span className="metric-period">{currentLabel}</span>
           </div>
-          <p className="figure dashboard-figure">{formatMoney(s.net_sales)}</p>
+          <p className="figure dashboard-figure">{formatMoneyWhole(s.net_sales)}</p>
           <p className="metric-comparison">
             <Change value={s.net_sales_change_pct}>
               {s.net_sales_change_pct === null
@@ -184,9 +187,13 @@ export default async function Page({
           </p>
           <div className="metric-visual">
             <Sparkline current={data.current} previous={data.previous} />
-            <p className="metric-status">
-              {noSales ? 'Sin ventas en el periodo' : 'Completa'}
-            </p>
+            {(noSales || data.previous.length > 1) && (
+              <p className="metric-status">
+                {noSales
+                  ? 'Sin ventas en el periodo'
+                  : `Punteada: ${previousLabel}`}
+              </p>
+            )}
           </div>
         </section>
         <section className="dashboard-metric card">
@@ -199,7 +206,7 @@ export default async function Page({
           </div>
           {costAvailable || noSales ? (
             <p className="figure dashboard-figure">
-              {formatMoney(s.gross_margin)}
+              {formatMoneyWhole(s.gross_margin)}
               {costAvailable && s.margin_pct !== null && (
                 <span className="margin-rate">
                   {' '}

@@ -55,14 +55,14 @@ it('declara cobertura, ausencia de comparación y riesgo con texto', async () =>
   ).toBeInTheDocument()
   expect(screen.getAllByText('Sin comparación')).toHaveLength(2)
   expect(screen.getByText('Riesgo')).toBeInTheDocument()
-  expect(within(screen.getByRole('heading', { name: 'Margen bruto' }).closest('section')!).getByText('−$10.00')).toBeInTheDocument()
+  expect(within(screen.getByRole('heading', { name: 'Margen bruto' }).closest('section')!).getByText('−$10')).toBeInTheDocument()
 })
 it('oculta el margen desconocido y ofrece cómo importar costos', async () => {
   await show({
     ...data,
     summary: { ...data.summary, coverage: null, margin_pct: null },
   })
-  expect(within(screen.getByRole('heading', { name: 'Margen bruto' }).closest('section')!).queryByText('−$10.00')).not.toBeInTheDocument()
+  expect(within(screen.getByRole('heading', { name: 'Margen bruto' }).closest('section')!).queryByText('−$10')).not.toBeInTheDocument()
   expect(
     screen.getByRole('link', { name: 'Cómo importar costos' }),
   ).toHaveAttribute('href', '/o/demo/imports/new')
@@ -78,7 +78,9 @@ it('un periodo vacío con historial conserva cifras en cero', async () => {
       coverage: null,
     },
   })
-  expect(screen.getAllByText('$0.00')).toHaveLength(2)
+  expect(
+    screen.getAllByText('$0', { selector: '.dashboard-figure' }),
+  ).toHaveLength(2)
   expect(screen.getAllByText('Sin ventas en el periodo')).toHaveLength(2)
   expect(screen.queryByText('Aún no hay ventas')).not.toBeInTheDocument()
 })
