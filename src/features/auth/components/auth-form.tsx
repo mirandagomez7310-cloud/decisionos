@@ -3,9 +3,6 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { authenticate } from '../actions'
 import { authSchema, type AuthInput } from '../schemas'
 export function AuthForm({
@@ -27,7 +24,7 @@ export function AuthForm({
   })
   return (
     <form
-      className="mx-auto flex max-w-sm flex-col gap-4"
+      className="auth-form"
       onSubmit={handleSubmit(async (values) => {
         setMessage('')
         try {
@@ -43,52 +40,59 @@ export function AuthForm({
         }
       })}
     >
-      <h1 className="text-2xl font-semibold">
-        {mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
-      </h1>
+      <h1>{mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h1>
       <input type="hidden" {...register('next')} />
-      <div className="space-y-2">
-        <Label htmlFor="email">Correo electrónico</Label>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="email"
-          {...register('email')}
-          aria-invalid={!!errors.email}
-          aria-describedby={errors.email ? 'email-error' : undefined}
-        />
-        {errors.email && (
-          <p id="email-error" role="alert">
-            {errors.email.message}
-          </p>
-        )}
+      <div className="field-group">
+        <div className="field-row">
+          <label htmlFor="email">Correo electrónico</label>
+          <input
+            id="email"
+            type="email"
+            autoComplete="email"
+            inputMode="email"
+            autoCapitalize="none"
+            spellCheck={false}
+            {...register('email')}
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? 'email-error' : undefined}
+          />
+        </div>
+        <div className="field-row">
+          <label htmlFor="password">Contraseña</label>
+          <input
+            id="password"
+            type="password"
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            {...register('password')}
+            aria-invalid={!!errors.password}
+            aria-describedby={errors.password ? 'password-error' : undefined}
+          />
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="password">Contraseña</Label>
-        <Input
-          id="password"
-          type="password"
-          autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-          {...register('password')}
-          aria-invalid={!!errors.password}
-          aria-describedby={errors.password ? 'password-error' : undefined}
-        />
-        {errors.password && (
-          <p id="password-error" role="alert">
-            {errors.password.message}
-          </p>
-        )}
-      </div>
-      {message && <p role="alert">{message}</p>}
-      <Button type="submit" disabled={isSubmitting}>
+      {errors.email && (
+        <p id="email-error" className="field-error" role="alert">
+          {errors.email.message}
+        </p>
+      )}
+      {errors.password && (
+        <p id="password-error" className="field-error" role="alert">
+          {errors.password.message}
+        </p>
+      )}
+      {message && (
+        <p className="field-error" role="alert">
+          {message}
+        </p>
+      )}
+      <button className="pill-button" type="submit" disabled={isSubmitting}>
         {isSubmitting
           ? 'Enviando…'
           : mode === 'login'
             ? 'Entrar'
             : 'Crear cuenta'}
-      </Button>
+      </button>
       <Link
-        className="underline"
+        className="underline auth-switch"
         href={
           (mode === 'login' ? '/signup' : '/login') +
           '?next=' +

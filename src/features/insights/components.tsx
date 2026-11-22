@@ -4,7 +4,7 @@ import { evidenceHref } from './shared'
 
 const severities = {
   critical: ['Crítico', 'risk-label risk-cell'],
-  warning: ['Atención', 'risk-label'],
+  warning: ['Atención', 'risk-label warning-label'],
   info: ['Dato', 'insight-info'],
 }
 

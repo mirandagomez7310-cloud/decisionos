@@ -9,7 +9,7 @@ export default async function Page({
   return (
     <>
       {error === 'confirmation' && (
-        <p className="mx-auto mb-4 max-w-sm" role="alert">
+        <p className="auth-notice" role="alert">
           El enlace de confirmación caducó o ya se usó. Inicia sesión o vuelve a
           registrarte para recibir otro.
         </p>

@@ -1,11 +1,13 @@
 import Link from 'next/link'
+import { ArrowDownRight, ArrowUpRight, ChartLine, Percent } from 'lucide-react'
 import { DashboardInsights } from '@/features/insights/components'
 import { QueryAlert } from '@/features/analysis/components'
 import { getDashboard } from '@/features/dashboard/queries'
 import { EmptySales } from '@/features/dashboard/empty-sales'
 import { PeriodSelect } from '@/features/dashboard/period-select'
-import { LocationTag } from '@/components/location-tag'
 import { LineChart } from '@/components/charts/line-chart'
+import { Sparkline } from '@/components/charts/sparkline'
+import { CoverageRing } from '@/components/charts/coverage-ring'
 import {
   formatMoney,
   formatMoneyChange,
@@ -15,6 +17,17 @@ import {
   formatPeriod,
 } from '@/lib/format'
 import type { MetricMovement } from '@/lib/supabase/types'
+
+function Change({ value, children }: { value: number | null; children: string }) {
+  const trend = value === null || value === 0 ? undefined : value > 0 ? 'up' : 'down'
+  return (
+    <strong data-trend={trend}>
+      {trend === 'up' && <ArrowUpRight aria-hidden="true" />}
+      {trend === 'down' && <ArrowDownRight aria-hidden="true" />}
+      {children}
+    </strong>
+  )
+}
 
 function Movements({
   title,
@@ -29,8 +42,9 @@ function Movements({
   slug: string
   period: string
 }) {
+  const scale = Math.max(1, ...rows.map((row) => Math.abs(row.delta)))
   return (
-    <section>
+    <section className="card dashboard-section">
       <h3>{title}</h3>
       {rows.length ? (
         <table className="metrics-table">
@@ -52,7 +66,19 @@ function Movements({
                     {row.name}
                   </Link>
                 </th>
-                <td>{formatMoneyChange(row.delta)}</td>
+                <td>
+                  <div className="delta-cell">
+                    {formatMoneyChange(row.delta)}
+                    <span className="delta-bar" aria-hidden="true">
+                      {row.delta !== 0 && (
+                        <span
+                          data-trend={row.delta > 0 ? 'up' : 'down'}
+                          style={{ width: `${(Math.abs(row.delta) / scale) * 50}%` }}
+                        />
+                      )}
+                    </span>
+                  </div>
+                </td>
                 {products && (
                   <td
                     className={
@@ -74,7 +100,7 @@ function Movements({
           </tbody>
         </table>
       ) : (
-        <p>Sin cambios entre los dos periodos</p>
+        <p className="metric-status">Sin cambios entre los dos periodos</p>
       )}
     </section>
   )
@@ -130,13 +156,6 @@ export default async function Page({
       </>
     )
   const s = data.summary
-  const month = new Intl.DateTimeFormat('es-MX', {
-    month: 'short',
-    timeZone: 'UTC',
-  })
-    .format(new Date(data.period.to + 'T00:00:00Z'))
-    .replace('.', '')
-    .toUpperCase()
   const noSales = s.sales_count === 0
   const costAvailable = s.coverage !== null && s.coverage > 0
   return (
@@ -146,31 +165,38 @@ export default async function Page({
         className="dashboard-metrics"
         key={`${data.period.from}:${data.period.to}`}
       >
-        <section className="dashboard-metric">
-          <LocationTag
-            code={`VTA · ${month}`}
-            name="Ventas netas"
-            period={currentLabel}
-          />
+        <section className="dashboard-metric card">
+          <div className="metric-head">
+            <span className="metric-icon" style={{ '--tone': 'var(--m-sales)' } as React.CSSProperties}>
+              <ChartLine aria-hidden="true" />
+            </span>
+            <h2>Ventas netas</h2>
+            <span className="metric-period">{currentLabel}</span>
+          </div>
           <p className="figure dashboard-figure">{formatMoney(s.net_sales)}</p>
           <p className="metric-comparison">
-            <strong>
+            <Change value={s.net_sales_change_pct}>
               {s.net_sales_change_pct === null
                 ? 'Sin comparación'
                 : formatPercentChange(s.net_sales_change_pct)}
-            </strong>{' '}
+            </Change>{' '}
             frente a {formatMoney(s.prev_net_sales)}
           </p>
-          <p className="label-condensed metric-status">
-            {noSales ? 'Sin ventas en el periodo' : 'Completa'}
-          </p>
+          <div className="metric-visual">
+            <Sparkline current={data.current} previous={data.previous} />
+            <p className="metric-status">
+              {noSales ? 'Sin ventas en el periodo' : 'Completa'}
+            </p>
+          </div>
         </section>
-        <section className="dashboard-metric">
-          <LocationTag
-            code={`MGN · ${month}`}
-            name="Margen bruto"
-            period={currentLabel}
-          />
+        <section className="dashboard-metric card">
+          <div className="metric-head">
+            <span className="metric-icon" style={{ '--tone': 'var(--m-margin)' } as React.CSSProperties}>
+              <Percent aria-hidden="true" />
+            </span>
+            <h2>Margen bruto</h2>
+            <span className="metric-period">{currentLabel}</span>
+          </div>
           {costAvailable || noSales ? (
             <p className="figure dashboard-figure">
               {formatMoney(s.gross_margin)}
@@ -190,24 +216,27 @@ export default async function Page({
             </div>
           )}
           <p className="metric-comparison">
-            <strong>
+            <Change value={s.margin_pct_change_pts}>
               {s.margin_pct_change_pts === null
                 ? 'Sin comparación'
                 : formatPoints(s.margin_pct_change_pts)}
-            </strong>
+            </Change>
             {s.prev_margin_pct !== null && (
               <> frente a {formatPercent(s.prev_margin_pct)}</>
             )}
           </p>
-          <p className="label-condensed metric-status">
-            {noSales
-              ? 'Sin ventas en el periodo'
-              : !costAvailable
-                ? 'Sin datos de costo'
-                : s.coverage === 100
-                  ? 'Completa'
-                  : `Cobertura: ${new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 }).format(s.coverage!)} % del importe con costo`}
-          </p>
+          <div className="metric-visual">
+            {costAvailable && <CoverageRing value={s.coverage!} />}
+            <p className="metric-status">
+              {noSales
+                ? 'Sin ventas en el periodo'
+                : !costAvailable
+                  ? 'Sin datos de costo'
+                  : s.coverage === 100
+                    ? 'Completa'
+                    : `Cobertura: ${new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 }).format(s.coverage!)} % del importe con costo`}
+            </p>
+          </div>
         </section>
       </div>
       {diagnosis}

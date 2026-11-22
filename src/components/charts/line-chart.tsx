@@ -26,14 +26,20 @@ export function LineChart({
   const y = (value: number) => 200 - ((value - min) / (max - min)) * 175
   // El SVG ocupa el área de trazado; ejes y etiquetas directas van en el padding de .chart-canvas (overflow visible).
   const x = (index: number) => `${(index / Math.max(1, count - 1)) * 100}%`
+  // Coordenada numérica para el SVG interno (viewBox 100×200, sin proporción fija).
+  const xn = (index: number) => (index / Math.max(1, count - 1)) * 100
+  const path = (series: DailySale[]) =>
+    series.map((point, index) => `${xn(index)},${y(point.net_sales)}`).join(' ')
   const last = current.at(-1)
   const prevLast = previous.at(-1)
   return (
-    <section className="daily-chart">
-      <h2>Ventas diarias</h2>
-      <div className="chart-legend">
-        <span>Actual · {currentLabel}</span>
-        <span>Anterior · {previousLabel}</span>
+    <section className="daily-chart card dashboard-section">
+      <div className="section-head">
+        <h2>Ventas diarias</h2>
+        <div className="chart-legend">
+          <span>Actual · {currentLabel}</span>
+          <span>Anterior · {previousLabel}</span>
+        </div>
       </div>
       <div className="chart-canvas">
         <svg
@@ -73,31 +79,57 @@ export function LineChart({
               </text>
             ) : null,
           )}
-          {[previous, current].map((series, seriesIndex) => (
-            <g
-              key={seriesIndex}
-              className={seriesIndex ? 'chart-current' : 'chart-previous'}
-            >
-              {series.map((point, index) =>
-                index > 0 ? (
-                  <line
-                    key={point.day}
-                    x1={x(index - 1)}
-                    x2={x(index)}
-                    y1={y(series[index - 1]!.net_sales)}
-                    y2={y(point.net_sales)}
-                  />
-                ) : (
-                  <circle
-                    key={point.day}
-                    cx={x(index)}
-                    cy={y(point.net_sales)}
-                    r="2"
-                  />
-                ),
-              )}
-            </g>
-          ))}
+          <svg
+            className="reveal-x"
+            width="100%"
+            height="200"
+            viewBox="0 0 100 200"
+            preserveAspectRatio="none"
+            overflow="visible"
+          >
+            <defs>
+              <linearGradient id="area-fill" x1="0" x2="0" y1="0" y2="1">
+                <stop
+                  offset="0"
+                  stopColor="var(--series-current)"
+                  stopOpacity="0.24"
+                />
+                <stop
+                  offset="1"
+                  stopColor="var(--series-current)"
+                  stopOpacity="0"
+                />
+              </linearGradient>
+            </defs>
+            {current.length > 1 && (
+              <polygon
+                className="chart-area"
+                points={`0,${y(0)} ${path(current)} ${xn(current.length - 1)},${y(0)}`}
+              />
+            )}
+            {previous.length > 1 && (
+              <polyline
+                className="chart-previous"
+                vectorEffect="non-scaling-stroke"
+                points={path(previous)}
+              />
+            )}
+            {current.length > 1 && (
+              <polyline
+                className="chart-current"
+                vectorEffect="non-scaling-stroke"
+                points={path(current)}
+              />
+            )}
+          </svg>
+          {previous.length === 1 && (
+            <circle
+              cx={x(0)}
+              cy={y(previous[0]!.net_sales)}
+              r="3"
+              className="chart-previous"
+            />
+          )}
           {last && (
             <>
               <circle

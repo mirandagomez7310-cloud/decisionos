@@ -74,7 +74,7 @@ export function LineChartHover({ rows }: { rows: ChartRow[] }) {
           </svg>
           {/* Junto a la cruz, del lado con más espacio. */}
           <output
-            className="chart-tooltip"
+            className="chart-tooltip material"
             style={
               pct > 50
                 ? { right: `calc(${100 - pct}% + 8px)` }

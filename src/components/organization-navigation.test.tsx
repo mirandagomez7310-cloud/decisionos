@@ -4,21 +4,28 @@ import { OrganizationNavigation } from './organization-navigation'
 const route = vi.hoisted(() => ({ pathname: '/o/demo/catalog/customers' }))
 vi.mock('next/navigation', () => ({ usePathname: () => route.pathname }))
 afterEach(cleanup)
+/** Enlace siguiente en el orden de lectura de la navegación. */
+function after(name: string) {
+  const links = screen.getAllByRole('link')
+  return links[links.indexOf(screen.getByRole('link', { name })) + 1]
+}
 it('muestra Diagnóstico después de Inicio con el total y la ruta activa', () => {
   route.pathname = '/o/demo/insights'
   const { rerender } = render(
     <OrganizationNavigation slug="demo" canManage={false} newInsights={3} />,
   )
   const insights = screen.getByRole('link', { name: 'Diagnóstico 3' })
-  expect(screen.getByRole('link', { name: 'Inicio' }).nextElementSibling).toBe(
-    insights,
-  )
+  expect(after('Inicio')).toBe(insights)
   expect(insights).toHaveAttribute('href', '/o/demo/insights')
   expect(insights).toHaveAttribute('aria-current', 'page')
   rerender(
     <OrganizationNavigation slug="demo" canManage={false} newInsights={0} />,
   )
   expect(insights).toHaveAccessibleName('Diagnóstico')
+  rerender(
+    <OrganizationNavigation slug="demo" canManage={false} newInsights={150} />,
+  )
+  expect(insights).toHaveAccessibleName('Diagnóstico 99+')
 })
 
 describe('navegación de organización', () => {
@@ -54,9 +61,9 @@ describe('navegación de organización', () => {
       '/o/demo/settings/members',
     )
     expect(screen.getByRole('link', { name: 'Auditoría' })).toBeInTheDocument()
-    expect(
-      screen.getByRole('link', { name: 'Margen' }).nextElementSibling,
-    ).toBe(screen.getByRole('link', { name: 'Inventario' }))
+    expect(after('Margen')).toBe(
+      screen.getByRole('link', { name: 'Inventario' }),
+    )
     route.pathname = '/o/demo/inventory'
     rerender(<OrganizationNavigation slug="demo" canManage={false} />)
     expect(screen.getByRole('link', { name: 'Inventario' })).toHaveAttribute(
@@ -64,9 +71,7 @@ describe('navegación de organización', () => {
       'page',
     )
     const receivables = screen.getByRole('link', { name: 'Cobranza' })
-    expect(
-      screen.getByRole('link', { name: 'Inventario' }).nextElementSibling,
-    ).toBe(receivables)
+    expect(after('Inventario')).toBe(receivables)
     expect(receivables).toHaveAttribute('href', '/o/demo/receivables')
     route.pathname = '/o/demo/receivables'
     rerender(<OrganizationNavigation slug="demo" canManage={false} />)
