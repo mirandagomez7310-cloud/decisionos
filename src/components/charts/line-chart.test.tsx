@@ -47,6 +47,27 @@ it('incluye resumen, tabla exacta y navegación por teclado con periodos desigua
   )
   expect(screen.getByRole('status')).toHaveTextContent('2 oct: $42.00')
 })
+it.each([
+  [1_200_000, 1_230_000],
+  [1_000, 1_000],
+])('no repite etiquetas del eje con ventas entre %d y %d', (a, b) => {
+  const { container } = render(
+    <LineChart
+      current={[
+        { day: '2026-11-01', net_sales: a },
+        { day: '2026-11-02', net_sales: b },
+      ]}
+      previous={[]}
+      currentLabel="noviembre"
+      previousLabel="octubre"
+    />,
+  )
+  const labels = [...container.querySelectorAll('text[x="-64"]')].map(
+    (node) => node.textContent,
+  )
+  expect(labels.length).toBeGreaterThan(1)
+  expect(new Set(labels).size).toBe(labels.length)
+})
 it('presenta ceros y valores negativos sin geometría inválida', () => {
   const { container } = render(
     <LineChart

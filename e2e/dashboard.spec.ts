@@ -65,7 +65,14 @@ test('owner importa el CSV y ve cifras ejecutivas exactas', async ({
       style: 'currency',
       currency: 'MXN',
     }).format(value / 100)
-  const oneDecimal = (numerator: number, denominator: number) =>
+  // Cifras de cartel sin centavos (las comparaciones conservan el importe exacto).
+  const moneyWhole = (value: number) =>
+    new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      maximumFractionDigits: 0,
+    }).format(value / 100)
+  const oneDecimal =(numerator: number, denominator: number) =>
     (Math.round((numerator * 1000) / denominator) / 10).toFixed(1)
   await page.getByLabel('Tipo de importación').selectOption('sales')
   await page.getByLabel('Archivo', { exact: true }).setInputFiles({
@@ -88,13 +95,13 @@ test('owner importa el CSV y ve cifras ejecutivas exactas', async ({
   const sales = page.locator('.dashboard-metric').nth(0)
   const margin = page.locator('.dashboard-metric').nth(1)
   await expect(sales.locator('.dashboard-figure')).toHaveText(
-    money(current.net),
+    moneyWhole(current.net),
   )
   await expect(sales.locator('.metric-comparison')).toHaveText(
     `+${oneDecimal(current.net - previous.net, previous.net)}\u2009% frente a ${money(previous.net)}`,
   )
   await expect(margin.locator('.dashboard-figure')).toHaveText(
-    `${money(current.margin)} · ${oneDecimal(current.margin, current.base)}\u2009%`,
+    `${moneyWhole(current.margin)} · ${oneDecimal(current.margin, current.base)}\u2009%`,
   )
   await expect(margin.locator('.metric-status')).toHaveText(
     `Cobertura: ${oneDecimal(current.base, current.net)} % del importe con costo`,

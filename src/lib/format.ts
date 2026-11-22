@@ -10,6 +10,13 @@ const decimal = new Intl.NumberFormat('es-MX', {
 })
 const minus = (text: string) => text.replace('-', '−')
 export const formatMoney = (value: number) => minus(money.format(value))
+const wholeMoney = new Intl.NumberFormat('es-MX', {
+  style: 'currency',
+  currency: 'MXN',
+  maximumFractionDigits: 0,
+})
+/** Cifras de cartel (tarjetas KPI): sin centavos; el importe exacto va en comparaciones y tablas. */
+export const formatMoneyWhole = (value: number) => minus(wholeMoney.format(value))
 export const formatMoneyChange = (value: number) =>
   (value >= 0 ? '+' : '') + formatMoney(value)
 export const formatPercent = (value: number) =>

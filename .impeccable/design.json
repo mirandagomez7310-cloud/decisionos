@@ -1,0 +1,454 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-22T19:47:23.903Z",
+  "title": "Design System: DecisionOS",
+  "extensions": {
+    "colorMeta": {
+      "action": {
+        "role": "primary",
+        "displayName": "Azul de sistema",
+        "canonical": "#0071e3",
+        "tonalRamp": [
+          "#00203f",
+          "#003266",
+          "#004a94",
+          "#0062c4",
+          "#0071e3",
+          "#4d9cf0",
+          "#9cc7f7",
+          "#e3f0fd"
+        ]
+      },
+      "link": {
+        "role": "primary",
+        "displayName": "Azul de enlace",
+        "canonical": "#0066cc"
+      },
+      "positive": {
+        "role": "secondary",
+        "displayName": "Verde de sistema",
+        "canonical": "#248a3d",
+        "tonalRamp": [
+          "#0c2e14",
+          "#13461f",
+          "#1b6230",
+          "#248a3d",
+          "#3fa858",
+          "#76c487",
+          "#b2deba",
+          "#e6f5e9"
+        ]
+      },
+      "risk": {
+        "role": "secondary",
+        "displayName": "Rojo de sistema",
+        "canonical": "#d70015",
+        "tonalRamp": [
+          "#3d0006",
+          "#62000a",
+          "#8f000e",
+          "#d70015",
+          "#e84452",
+          "#f08690",
+          "#f7bfc4",
+          "#fdeced"
+        ]
+      },
+      "warning": {
+        "role": "secondary",
+        "displayName": "Naranja de aviso",
+        "canonical": "#c93400"
+      },
+      "series-current": {
+        "role": "tertiary",
+        "displayName": "Serie actual",
+        "canonical": "#0071e3"
+      },
+      "series-previous": {
+        "role": "tertiary",
+        "displayName": "Serie anterior (punteada)",
+        "canonical": "#8e8e93"
+      },
+      "gain": {
+        "role": "tertiary",
+        "displayName": "Ganancia",
+        "canonical": "#00829b",
+        "tonalRamp": [
+          "#00252c",
+          "#003a46",
+          "#005666",
+          "#00829b",
+          "#33a3b8",
+          "#73c2d1",
+          "#b3e0e8",
+          "#e6f5f8"
+        ]
+      },
+      "loss": {
+        "role": "tertiary",
+        "displayName": "Pérdida",
+        "canonical": "#e0480a",
+        "tonalRamp": [
+          "#3e1403",
+          "#621f04",
+          "#923006",
+          "#e0480a",
+          "#ea733f",
+          "#f2a07d",
+          "#f8cdba",
+          "#fdefe8"
+        ]
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "Gris agrupado",
+        "canonical": "#f5f5f7",
+        "tonalRamp": [
+          "#1d1d1f",
+          "#3a3a3c",
+          "#636366",
+          "#8e8e93",
+          "#c7c7cc",
+          "#dcdce1",
+          "#e9e9ee",
+          "#f5f5f7"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Superficie",
+        "canonical": "#ffffff"
+      },
+      "foreground": {
+        "role": "neutral",
+        "displayName": "Tinta",
+        "canonical": "#1d1d1f"
+      },
+      "muted-foreground": {
+        "role": "neutral",
+        "displayName": "Tinta secundaria",
+        "canonical": "#6e6e73"
+      },
+      "shell": {
+        "role": "neutral",
+        "displayName": "Material translúcido",
+        "canonical": "rgb(246 246 248 / 0.78)"
+      },
+      "upright": {
+        "role": "neutral",
+        "displayName": "Separador",
+        "canonical": "rgb(60 60 67 / 0.16)"
+      },
+      "separator-strong": {
+        "role": "neutral",
+        "displayName": "Separador fuerte",
+        "canonical": "rgb(60 60 67 / 0.29)"
+      },
+      "glyph-top": {
+        "role": "tertiary",
+        "displayName": "Glifo de acción, arriba",
+        "canonical": "#2f8cff"
+      },
+      "glyph-bottom": {
+        "role": "tertiary",
+        "displayName": "Glifo de acción, abajo",
+        "canonical": "#0060d0"
+      }
+    },
+    "typographyMeta": {
+      "display-figure": {
+        "displayName": "Cifra de pantalla de bloqueo",
+        "purpose": "La cifra de ejemplo del login."
+      },
+      "metric-figure": {
+        "displayName": "Cifra de métrica",
+        "purpose": "Cifra protagonista de cada tarjeta KPI; escala con el ancho de la tarjeta."
+      },
+      "large-title": {
+        "displayName": "Título grande",
+        "purpose": "Título de página, 30 px en móvil."
+      },
+      "title": {
+        "displayName": "Título",
+        "purpose": "Encabezados de sección y de tarjeta de gráfica."
+      },
+      "headline": {
+        "displayName": "Titular",
+        "purpose": "Nombre de métrica, títulos de diagnóstico y de tabla."
+      },
+      "body": {
+        "displayName": "Cuerpo",
+        "purpose": "Texto corriente."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Botones píldora y campos agrupados."
+      },
+      "label": {
+        "displayName": "Rótulo",
+        "purpose": "Rótulos pequeños y cabeceras de tabla, en tipo de frase."
+      },
+      "caption": {
+        "displayName": "Leyenda",
+        "purpose": "Chips, distintivos, ejes y barra de pestañas."
+      },
+      "large-title-compact": {
+        "displayName": "Título grande compacto",
+        "purpose": "Título de página en móvil."
+      },
+      "empty-title": {
+        "displayName": "Titular vacío",
+        "purpose": "Titular del estado vacío."
+      },
+      "tagline": {
+        "displayName": "Tagline",
+        "purpose": "Promesa del login bajo la cifra."
+      },
+      "sheet-title": {
+        "displayName": "Título de hoja",
+        "purpose": "Título de la hoja de acceso y «Sin datos de costo»."
+      },
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "Marca DecisionOS."
+      },
+      "hero-label": {
+        "displayName": "Rótulo de cifra",
+        "purpose": "Rótulo sobre la cifra del login."
+      },
+      "sheet-link": {
+        "displayName": "Enlace de hoja",
+        "purpose": "Enlaces de la hoja «Más»."
+      },
+      "secondary": {
+        "displayName": "Secundario",
+        "purpose": "Enlace lateral, comparación, «Ver tabla» y aviso del login."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "Encabezado de grupo lateral y ejes de gráfica."
+      },
+      "tab-label": {
+        "displayName": "Rótulo de pestaña",
+        "purpose": "Barra de pestañas, como en iOS."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-card",
+        "value": "0 1px 2px rgb(0 0 0 / 0.04), 0 6px 20px rgb(0 0 0 / 0.05)",
+        "purpose": "Tarjetas y fichas; none en oscuro, sustituida por borde rgb(255 255 255 / 0.06)."
+      },
+      {
+        "name": "shadow-float",
+        "value": "0 2px 6px rgb(0 0 0 / 0.06), 0 18px 48px rgb(0 0 0 / 0.12)",
+        "purpose": "Hoja de acceso, hoja «Más» y tooltip; 0 18px 48px rgb(0 0 0 / 0.6) en oscuro."
+      },
+      {
+        "name": "shadow-segment",
+        "value": "0 1px 2px rgb(0 0 0 / 0.08), 0 3px 8px rgb(0 0 0 / 0.06)",
+        "purpose": "Segmento elegido del control segmentado."
+      },
+      {
+        "name": "material",
+        "value": "backdrop-filter: saturate(180%) blur(20px)",
+        "purpose": "Barra lateral, barra de pestañas y hoja de acceso."
+      },
+      {
+        "name": "glyph-glow",
+        "value": "0 10px 30px color-mix(in srgb, #0071e3 35%, transparent)",
+        "purpose": "Brillo bajo el glifo de acción del estado vacío."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-ios",
+        "value": "cubic-bezier(0.32, 0.72, 0, 1)",
+        "purpose": "Curva de todo movimiento de interfaz."
+      },
+      {
+        "name": "press",
+        "value": "transform scale(0.97) 160ms ease-ios",
+        "purpose": "Pulsación de botones píldora."
+      },
+      {
+        "name": "ring-close",
+        "value": "1200ms 150ms ease-ios",
+        "purpose": "El anillo de cobertura se cierra al cargar."
+      },
+      {
+        "name": "reveal-x",
+        "value": "clip-path 1400ms ease-ios",
+        "purpose": "La curva del login y las sparklines se trazan de izquierda a derecha al cargar y al cambiar de periodo."
+      },
+      {
+        "name": "rise",
+        "value": "translateY(16px) 700ms 200ms ease-ios",
+        "purpose": "Entrada de la hoja de acceso."
+      },
+      {
+        "name": "sheet-up",
+        "value": "translateY(40%) 420ms ease-ios",
+        "purpose": "Apertura de la hoja «Más»."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: no-preference",
+        "purpose": "Toda animación vive dentro de esta consulta."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone-narrow",
+        "value": "480px"
+      },
+      {
+        "name": "tablet",
+        "value": "768px"
+      },
+      {
+        "name": "desktop-sidebar",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón píldora",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal: píldora azul de sistema.",
+      "html": "<button class=\"ds-pill\">Entrar</button>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 22px; border: 0; border-radius: 999px; background: #0071e3; color: #fff; font: 500 17px/1.2 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; letter-spacing: -0.022em; cursor: pointer; transition: background-color 160ms ease, transform 160ms cubic-bezier(0.32, 0.72, 0, 1); } .ds-pill:hover { background: #0077ed; } .ds-pill:active { transform: scale(0.97); } .ds-pill:focus-visible { outline: 3px solid color-mix(in srgb, #0071e3 55%, transparent); outline-offset: 2px; }"
+    },
+    {
+      "name": "Botón con contorno",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción secundaria del diagnóstico.",
+      "html": "<button class=\"ds-outline\">Marcar como revisado</button>",
+      "css": ".ds-outline { min-height: 44px; padding: 8px 14px; border: 1px solid rgb(60 60 67 / 0.29); border-radius: 999px; background: #fff; color: #1d1d1f; font: 400 15px -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; cursor: pointer; } .ds-outline:hover { background: #e9e9ee; } .ds-outline:focus-visible { outline: 3px solid color-mix(in srgb, #0071e3 55%, transparent); outline-offset: 2px; }"
+    },
+    {
+      "name": "Grupo de campos",
+      "kind": "input",
+      "refersTo": "field-group",
+      "description": "Campos agrupados al estilo iOS con rótulo encima.",
+      "html": "<div class=\"ds-fields\"><label class=\"ds-row\"><span>Correo</span><input type=\"email\" placeholder=\"tu@empresa.mx\"></label><label class=\"ds-row\"><span>Contraseña</span><input type=\"password\"></label></div>",
+      "css": ".ds-fields { border-radius: 12px; background: #e9e9ee; overflow: hidden; width: 320px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; } .ds-row { display: grid; padding: 8px 14px 6px; } .ds-row + .ds-row { border-top: 1px solid rgb(60 60 67 / 0.16); } .ds-row span { font-size: 12px; font-weight: 500; color: #6e6e73; } .ds-row input { min-height: 32px; padding: 0; border: 0; outline: 0; background: transparent; font-size: 17px; color: #1d1d1f; } .ds-row:focus-within { box-shadow: inset 0 0 0 2px color-mix(in srgb, #0071e3 70%, transparent); border-radius: 12px; }"
+    },
+    {
+      "name": "Control segmentado",
+      "kind": "chip",
+      "refersTo": "segmented-control",
+      "description": "Selector de periodo con segmento elegido elevado.",
+      "html": "<div class=\"ds-seg\"><button>Mes</button><button aria-pressed=\"true\">Trimestre</button><button>Año</button></div>",
+      "css": ".ds-seg { display: inline-grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: 2px; border-radius: 10px; background: #e9e9ee; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; } .ds-seg button { min-height: 32px; padding: 4px 14px; border: 0; border-radius: 8px; background: transparent; font-size: 13px; font-weight: 500; color: #1d1d1f; cursor: pointer; transition: background-color 200ms cubic-bezier(0.32, 0.72, 0, 1); } .ds-seg button[aria-pressed='true'] { background: #fff; font-weight: 600; box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 3px 8px rgb(0 0 0 / 0.06); } .ds-seg button:focus-visible { outline: 3px solid color-mix(in srgb, #0071e3 55%, transparent); }"
+    },
+    {
+      "name": "Navegación lateral",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Barra lateral translúcida con icono por módulo y activo en azul.",
+      "html": "<nav class=\"ds-nav\"><p class=\"ds-nav-h\">Resumen</p><a class=\"ds-nav-a\" aria-current=\"page\" href=\"#\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 10l9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/></svg>Inicio</a><a class=\"ds-nav-a\" href=\"#\" style=\"--tone:#e30000\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M22 12h-4l-3 9L9 3l-3 9H2\"/></svg>Diagnóstico<span class=\"ds-badge\">3</span></a></nav>",
+      "css": ".ds-nav { display: grid; gap: 2px; width: 240px; padding: 8px 12px; background: rgb(246 246 248 / 0.78); backdrop-filter: saturate(180%) blur(20px); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; } .ds-nav-h { margin: 0; padding: 0 10px 4px; font-size: 11px; font-weight: 600; color: #6e6e73; } .ds-nav-a { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 6px 10px; border-radius: 8px; font-size: 14px; color: #1d1d1f; text-decoration: none; transition: background-color 120ms ease; } .ds-nav-a svg { width: 18px; height: 18px; color: var(--tone, #6e6e73); } .ds-nav-a:hover { background: color-mix(in srgb, #1d1d1f 6%, transparent); } .ds-nav-a[aria-current='page'] { background: #0071e3; color: #fff; font-weight: 500; } .ds-nav-a[aria-current='page'] svg { color: currentColor; } .ds-nav-a:focus-visible { outline: 3px solid color-mix(in srgb, #0071e3 55%, transparent); outline-offset: 2px; } .ds-badge { margin-left: auto; min-width: 22px; padding: 1px 7px; border-radius: 999px; background: #e30000; color: #fff; font-size: 12px; font-weight: 600; text-align: center; }"
+    },
+    {
+      "name": "Chip de variación",
+      "kind": "chip",
+      "refersTo": "trend-chip-up",
+      "description": "Dirección del cambio frente al periodo anterior.",
+      "html": "<span class=\"ds-trend\" data-trend=\"up\">+8.4 %</span> <span class=\"ds-trend\" data-trend=\"down\">−3.1 pts</span>",
+      "css": ".ds-trend { display: inline-flex; align-items: center; padding: 2px 8px 2px 6px; border-radius: 999px; font: 600 14px -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-variant-numeric: tabular-nums; background: #e9e9ee; color: #1d1d1f; } .ds-trend[data-trend='up'] { color: #248a3d; background: color-mix(in srgb, #248a3d 13%, transparent); } .ds-trend[data-trend='down'] { color: #d70015; background: color-mix(in srgb, #d70015 12%, transparent); }"
+    },
+    {
+      "name": "Tarjeta KPI",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Cifra protagonista con comparación y sparkline frente al periodo anterior.",
+      "html": "<article class=\"ds-card\"><h2>Ventas netas</h2><p class=\"ds-fig\">$1,284,500</p><p class=\"ds-cmp\"><b>+8.4 %</b> frente a octubre</p><svg class=\"ds-spark\" viewBox=\"0 0 100 30\" preserveAspectRatio=\"none\"><polyline points=\"0,22 15,20 30,24 45,16 60,14 75,10 100,6\" fill=\"none\" stroke=\"#8e8e93\" stroke-width=\"1.5\" stroke-dasharray=\"3 3\" vector-effect=\"non-scaling-stroke\" transform=\"translate(0,4)\"/><polyline points=\"0,22 15,20 30,24 45,16 60,14 75,10 100,6\" fill=\"none\" stroke=\"#0071e3\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" vector-effect=\"non-scaling-stroke\"/></svg></article>",
+      "css": ".ds-card { width: 320px; padding: 20px 22px; border-radius: 18px; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 6px 20px rgb(0 0 0 / 0.05); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; color: #1d1d1f; } .ds-card h2 { margin: 0; font-size: 15px; font-weight: 600; } .ds-fig { margin: 14px 0 0; font: 700 48px/1.05 -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; } .ds-cmp { margin: 8px 0 0; font-size: 14px; color: #6e6e73; } .ds-cmp b { padding: 2px 8px; border-radius: 999px; color: #248a3d; background: color-mix(in srgb, #248a3d 13%, transparent); } .ds-spark { display: block; width: 100%; height: 56px; margin-top: 16px; }"
+    },
+    {
+      "name": "Barra divergente",
+      "kind": "custom",
+      "refersTo": "card",
+      "description": "Contribución al cambio: cero al centro, ganancia a la derecha, pérdida a la izquierda.",
+      "html": "<div class=\"ds-delta\"><span data-trend=\"up\" style=\"width:30%\"></span></div><div class=\"ds-delta\"><span data-trend=\"down\" style=\"width:18%\"></span></div>",
+      "css": ".ds-delta { position: relative; width: 140px; height: 6px; margin: 10px 0; border-radius: 3px; background: #e9e9ee; } .ds-delta::before { content: ''; position: absolute; top: -2px; bottom: -2px; left: 50%; width: 1px; background: rgb(60 60 67 / 0.29); } .ds-delta span { position: absolute; top: 0; bottom: 0; border-radius: 3px; } .ds-delta [data-trend='up'] { left: 50%; background: #00829b; } .ds-delta [data-trend='down'] { right: 50%; background: #e0480a; }"
+    },
+    {
+      "name": "Estado vacío",
+      "kind": "custom",
+      "refersTo": "empty-glyph",
+      "description": "Glifo de acción de apple.com, titular y llamada a importar.",
+      "html": "<section class=\"ds-empty\"><span class=\"ds-glyph\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z\"/><path d=\"M14 2v4a2 2 0 0 0 2 2h4\"/><path d=\"M12 12v6\"/><path d=\"m15 15-3-3-3 3\"/></svg></span><h2>Aún no hay ventas</h2><p>Importa tu primer archivo para ver ventas y margen.</p></section>",
+      "css": ".ds-empty { display: grid; justify-items: center; gap: 14px; width: 420px; padding: 56px 24px; border-radius: 18px; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 6px 20px rgb(0 0 0 / 0.05); text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; color: #1d1d1f; } .ds-glyph { display: grid; place-items: center; width: 88px; height: 88px; border-radius: 24px; background: linear-gradient(180deg, #2f8cff, #0060d0); color: #fff; box-shadow: 0 10px 30px color-mix(in srgb, #0071e3 35%, transparent); } .ds-glyph svg { width: 44px; height: 44px; } .ds-empty h2 { margin: 0; font: 700 34px -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif; letter-spacing: -0.03em; } .ds-empty p { margin: 0; max-width: 52ch; font-size: 17px; color: #6e6e73; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "La cifra en la pantalla de bloqueo",
+    "overview": "DecisionOS abre como el iPhone abre con la hora: una cifra enorme, tabular y de tracking negativo, con su periodo y su cobertura a la vista. Fuera de esa entrada, el producto se comporta como una app de macOS e iOS: fondo agrupado gris claro con tarjetas blancas, barra lateral translúcida con desenfoque en escritorio, barra de pestañas con hoja «Más» en móvil, control segmentado, campos agrupados y botones píldora. El referente fijado por la usuaria es «Mezcla» (D-037): impacto de apple.com en login y estados vacíos; app nativa dentro.\n\nLa densidad es de app de consulta, no de panel: dos cifras protagonistas por vista, cada una con su historia (sparkline frente al periodo anterior) o su cobertura (anillo). El color es de sistema y casi siempre significa algo: azul para acción y serie actual, verde y rojo para dirección, un color por módulo solo en los iconos de navegación. La profundidad viene del tono (gris agrupado contra blanco) y de sombras casi imperceptibles; en oscuro, las sombras desaparecen y un borde blanco al 6 % separa las superficies.\n\nRechazos confirmados: la rejilla de seis KPIs de colores, el formulario centrado sobre un degradado y la plantilla titular más ilustración.",
+    "keyCharacteristics": [
+      "Colores de sistema de Apple en claro y oscuro, siguiendo `prefers-color-scheme`.",
+      "Pila tipográfica del sistema (SF en Apple, Segoe UI Variable en Windows), sin fuentes servidas.",
+      "Cifras tabulares grandes con tracking negativo como protagonistas.",
+      "Tarjetas blancas de 18 px sobre fondo agrupado; materiales translúcidos en la navegación.",
+      "Gráficas en SVG propio (D-016): serie actual sólida, anterior punteada, barras divergentes ganancia/pérdida.",
+      "Movimiento con la curva de iOS; todo se apaga con `prefers-reduced-motion`."
+    ],
+    "rules": [
+      {
+        "name": "The Color Con Significado Rule",
+        "body": "Verde y rojo solo indican dirección o riesgo; nunca decoran. El azul es acción o serie actual, no adorno.",
+        "section": "colors"
+      },
+      {
+        "name": "The Un Color Por Módulo Rule",
+        "body": "Los colores de módulo viven solo en iconos y teselas de icono; ni fondos de tarjeta ni texto.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pareja Oscura Rule",
+        "body": "Todo color nuevo entra con su valor oscuro; ningún hex suelto en componentes. Única excepción: el degradado del glifo de acción, idéntico en ambos modos.",
+        "section": "colors"
+      },
+      {
+        "name": "The Cifra Tabular Rule",
+        "body": "Toda cifra, celda y eje lleva `tabular-nums`; las cifras grandes van en la variante Display a 700 con tracking negativo.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sin Mayúsculas Rule",
+        "body": "Los rótulos van en tipo de frase, sin versalitas ni tracking abierto; el estilo condensado en mayúsculas de la dirección anterior no existe en este sistema.",
+        "section": "typography"
+      },
+      {
+        "name": "The Sombra Casi Invisible Rule",
+        "body": "Si la sombra se nota antes que la tarjeta, sobra. En oscuro, borde, nunca sombra de tarjeta.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Material Para Navegar Rule",
+        "body": "El desenfoque translúcido es para lo que flota sobre el contenido (barras, hojas), no para tarjetas.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** usar los tokens de color de sistema y su pareja oscura; las variantes de texto ya cumplen AA.",
+      "**Do** poner cada cifra con su periodo y, cuando aplique, su cobertura visible (anillo o rótulo).",
+      "**Do** dibujar la serie actual sólida en azul y la anterior punteada en gris; ganancia y pérdida con el par cian/naranja.",
+      "**Do** mantener 44 px de objetivo táctil y el contorno de foco azul al 55 % de 3 px.",
+      "**Do** animar con `cubic-bezier(0.32, 0.72, 0, 1)` y solo dentro de `prefers-reduced-motion: no-preference`.",
+      "**Do** usar la tesela de icono de color de módulo como único color decorativo de una tarjeta."
+    ],
+    "donts": [
+      "**Don't** montar rejillas de seis KPIs de colores ni tarjetas con fondo de color de módulo.",
+      "**Don't** centrar un formulario sobre un degradado ni usar la composición titular más ilustración.",
+      "**Don't** usar verde o rojo sin significado de dirección o riesgo.",
+      "**Don't** servir fuentes web ni volver a Barlow o rótulos condensados en mayúsculas.",
+      "**Don't** añadir librerías de gráficas; las gráficas son SVG propio (D-016).",
+      "**Don't** usar sombras de tarjeta en oscuro ni sombras duras o marcadas en ningún modo."
+    ]
+  }
+}
