@@ -205,12 +205,12 @@
   }
   /* Controles nativos y de shadcn con la misma caja: borde fino, radio 10 px y texto centrado en 44 px. */
   input:not(
-      [type='checkbox'],
-      [type='radio'],
-      [type='range'],
-      [type='hidden'],
-      [type='file']
-    ),
+    [type='checkbox'],
+    [type='radio'],
+    [type='range'],
+    [type='hidden'],
+    [type='file']
+  ),
   select,
   textarea {
     height: auto;
@@ -399,7 +399,9 @@ a.underline:hover {
   min-height: 100dvh;
 }
 .app-frame > .work-content {
-  padding-bottom: calc(var(--tabbar-height) + 32px + env(safe-area-inset-bottom));
+  padding-bottom: calc(
+    var(--tabbar-height) + 32px + env(safe-area-inset-bottom)
+  );
 }
 .app-sidebar {
   display: none;
@@ -1438,7 +1440,7 @@ a.underline:hover {
   }
 }
 
-/* ---------- Módulos de análisis (R2/R3 heredan la paleta) ---------- */
+/* ---------- Módulos de análisis (R2: Ventas, Margen, Diagnóstico) ---------- */
 .analysis-controls,
 .analysis-search,
 .analysis-switch,
@@ -1462,16 +1464,42 @@ a.underline:hover {
 }
 .analysis-search input,
 .analysis-search select {
-  border: 1px solid var(--separator-strong);
-  border-radius: var(--radius);
-  padding: 8px 12px;
   max-width: 100%;
   width: 100%;
-  color: var(--foreground);
 }
 .analysis-search {
   min-width: 0;
   max-width: 100%;
+}
+/* Campo de búsqueda de iOS: relleno gris, sin borde y lupa dentro. */
+.search-field > span {
+  position: relative;
+  display: block;
+}
+.search-field svg {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+.search-field input {
+  min-width: min(220px, 100%);
+  padding-left: 36px;
+  border-color: transparent;
+  background: var(--fill);
+}
+.search-field input:focus-visible {
+  background: var(--surface);
+  border-color: var(--separator-strong);
+}
+.action-button.compact {
+  padding-inline: 18px;
+  font-size: 15px;
+  font-weight: 600;
 }
 .analysis-switch {
   gap: 2px;
@@ -1488,6 +1516,19 @@ a.underline:hover {
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
+}
+@media (max-width: 767px) {
+  /* Como en iOS: el control segmentado se desplaza en horizontal en vez de partirse en filas. */
+  .analysis-switch {
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .analysis-switch a {
+    flex: none;
+    white-space: nowrap;
+  }
 }
 .analysis-switch a[aria-current] {
   background: var(--surface);
@@ -1533,10 +1574,147 @@ a.underline:hover {
   font-weight: 600;
 }
 .insight-actions button {
-  border: 1px solid var(--separator-strong);
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 0;
   border-radius: 999px;
-  padding: 8px 14px;
+  background: var(--fill);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.insight-actions button:hover {
+  background: var(--fill-strong);
+}
+
+/* Tarjetas de hallazgos (página de Diagnóstico). */
+.insight-list.insight-cards {
+  display: grid;
+  gap: 12px;
+  border: 0;
+}
+.insight-cards > li {
+  padding: 0;
+  border: 0;
+}
+.insight-cards article {
+  padding: 18px 20px;
+}
+.insight-cards h2 {
+  font-size: 17px;
+  line-height: 1.3;
+}
+.insight-cards article > p {
+  color: var(--muted-foreground);
+}
+.insight-cards .insight-actions {
+  margin-top: 4px;
+}
+.insight-context {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.insight-cards .insight-card-head {
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.insight-cards .insight-card-head .insight-context {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+}
+.insight-empty .empty-glyph {
+  background: var(--m-margin);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--m-margin) 30%, transparent);
+}
+/* Tipo de afirmación: icono y color propios para que hecho, hipótesis y sugerencia no se confundan. */
+.kind-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px 1px 6px;
+  border-radius: 999px;
+  background: var(--fill);
+  font-size: 12px;
+  font-weight: 600;
+}
+.kind-tag svg {
+  width: 14px;
+  height: 14px;
+}
+.kind-tag[data-kind='fact'] svg {
+  color: var(--muted-foreground);
+}
+.kind-tag[data-kind='hypothesis'] svg {
+  color: var(--m-receivables);
+}
+.kind-tag[data-kind='suggestion'] svg {
+  color: var(--action);
+}
+
+/* Recomendaciones de IA */
+.advisor {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding: 20px 22px;
+}
+.advisor-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.advisor-head h2 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.advisor-head p {
+  margin-top: 2px;
+  color: var(--muted-foreground);
+}
+.advisor-tile {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--m-receivables);
+  color: #fff;
+}
+.advisor-tile svg {
+  width: 22px;
+  height: 22px;
+}
+.ai-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--separator-strong);
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.advisor > p,
+.advisor > output {
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+.advisor .insight-list {
+  margin-block: 0;
+}
+.advisor-list h3 {
+  font-size: 16px;
+}
+.advisor-cites {
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+.advisor-cites ul {
+  margin-top: 2px;
+  padding-left: 18px;
+  list-style: disc;
 }
 .insight-filter-skeleton {
   flex: 1 1 280px;
@@ -1553,6 +1731,59 @@ a.underline:hover {
 .analysis-summary {
   margin-block: 16px;
 }
+/* Resumen gráfico: barra de proporciones y chips con recuentos. */
+.summary-chips {
+  display: grid;
+  gap: 10px;
+}
+.summary-chips > p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  font-size: 14px;
+}
+.summary-bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  max-width: 520px;
+  overflow: hidden;
+  border-radius: 3px;
+}
+.summary-bar > span {
+  min-width: 4px;
+  background: var(--tone);
+}
+.summary-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted-foreground);
+}
+.summary-chip strong {
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+.summary-chip::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--tone);
+}
+.summary-chips [data-tone='up'] {
+  --tone: var(--gain);
+}
+.summary-chips [data-tone='down'] {
+  --tone: var(--loss);
+}
+.summary-chips [data-tone='flat'] {
+  --tone: var(--series-previous);
+}
+.summary-chips [data-tone='missing'] {
+  --tone: var(--fill-strong);
+}
 .analysis-scroll {
   overflow-x: auto;
   max-width: 100%;
@@ -1562,8 +1793,71 @@ a.underline:hover {
 }
 .analysis-table th,
 .analysis-table td {
-  border-inline-end: 1px solid var(--upright);
-  padding: 12px;
+  padding: 12px 16px;
+  vertical-align: middle;
+}
+.analysis-table tbody tr {
+  transition: background-color 120ms ease;
+}
+.analysis-table tbody tr:hover {
+  background: color-mix(in srgb, var(--foreground) 3%, transparent);
+}
+/* La columna fija tiene fondo opaco: se tiñe aparte para que la fila no quede partida. */
+.analysis-table tbody tr:hover th {
+  background: color-mix(in srgb, var(--foreground) 3%, var(--surface));
+}
+.analysis-table thead th {
+  padding-block: 14px 10px;
+  border-bottom: 1px solid var(--upright);
+}
+.sort-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.sort-link:hover {
+  color: var(--foreground);
+}
+.sort-link svg {
+  width: 14px;
+  height: 14px;
+  color: var(--action);
+}
+.analysis-table .delta-cell {
+  justify-items: end;
+}
+.coverage-meter {
+  position: relative;
+  width: 100%;
+  max-width: 96px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--m-margin) 18%, transparent);
+}
+.coverage-meter > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--m-margin);
+}
+.page-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--fill);
+  font-size: 14px;
+  font-weight: 500;
+}
+.page-pill:hover {
+  background: var(--fill-strong);
+}
+.page-pill svg {
+  width: 16px;
+  height: 16px;
 }
 /* Los importes no se parten: la región ya desplaza en horizontal. */
 .analysis-table td,
@@ -1575,8 +1869,13 @@ a.underline:hover {
   position: sticky;
   left: 0;
   z-index: 1;
-  background: var(--background);
-  width: 180px;
+  background: var(--surface);
+  width: 200px;
+}
+.analysis-pagination {
+  align-items: center;
+  font-size: 14px;
+  color: var(--muted-foreground);
 }
 .analysis-code {
   display: block;

@@ -2,6 +2,10 @@ import Link from 'next/link'
 import {
   Activity,
   ChartLine,
+  CircleCheck,
+  Compass,
+  House,
+  Lightbulb,
   Package,
   Percent,
   Wallet,
@@ -10,17 +14,41 @@ import {
 import type { Insight } from '@/lib/supabase/types'
 import { evidenceHref } from './shared'
 
-// Icono y color del módulo al que apunta la evidencia; mismos que en la navegación.
-const modules: [string, LucideIcon, string][] = [
-  ['/receivables', Wallet, '--m-receivables'],
-  ['/inventory', Package, '--m-inventory'],
-  ['/margin', Percent, '--m-margin'],
-  ['/sales', ChartLine, '--m-sales'],
-]
-function moduleOf(href: string | undefined): [LucideIcon, string] {
-  const pathname = href && new URL(href, 'http://local').pathname
-  const found = pathname && modules.find(([path]) => pathname.endsWith(path))
-  return found ? [found[1], found[2]] : [Activity, '--m-insights']
+// Icono y color de cada módulo; los mismos que en la navegación.
+const modules: Record<Insight['module'], [LucideIcon, string]> = {
+  executive: [House, '--m-home'],
+  sales: [ChartLine, '--m-sales'],
+  profit: [Percent, '--m-margin'],
+  inventory: [Package, '--m-inventory'],
+  cash: [Wallet, '--m-receivables'],
+}
+export function InsightTile({ module }: { module?: Insight['module'] }) {
+  const [Icon, tone] = module ? modules[module] : [Activity, '--m-insights']
+  return (
+    <span
+      className="insight-tile"
+      aria-hidden="true"
+      style={{ '--tone': `var(${tone})` } as React.CSSProperties}
+    >
+      <Icon />
+    </span>
+  )
+}
+
+// Hecho, hipótesis y sugerencia nunca se confunden: cada uno con su icono y color.
+const kinds: Record<Insight['kind'], [string, LucideIcon]> = {
+  fact: ['Hecho', CircleCheck],
+  hypothesis: ['Hipótesis', Lightbulb],
+  suggestion: ['Sugerencia', Compass],
+}
+export function InsightKind({ kind }: { kind: Insight['kind'] }) {
+  const [label, Icon] = kinds[kind]
+  return (
+    <span className="kind-tag" data-kind={kind}>
+      <Icon aria-hidden="true" />
+      {label}
+    </span>
+  )
 }
 
 const severities = {
@@ -60,7 +88,7 @@ export function DashboardInsights({
   rows,
 }: {
   slug: string
-  rows: Pick<Insight, 'id' | 'title' | 'severity' | 'rule_key'>[]
+  rows: Pick<Insight, 'id' | 'title' | 'severity' | 'rule_key' | 'module'>[]
 }) {
   if (!rows.length) return null
   return (
@@ -72,25 +100,16 @@ export function DashboardInsights({
         </Link>
       </div>
       <ol className="insight-list">
-        {rows.map((row) => {
-          const [Icon, tone] = moduleOf(evidenceHref(slug, row.rule_key))
-          return (
-            <li key={row.id}>
-              <div className="insight-card-head">
-                <span
-                  className="insight-tile"
-                  aria-hidden="true"
-                  style={{ '--tone': `var(${tone})` } as React.CSSProperties}
-                >
-                  <Icon />
-                </span>
-                <InsightSeverity severity={row.severity} />
-              </div>
-              <h3>{row.title}</h3>
-              <InsightEvidence slug={slug} rule={row.rule_key} />
-            </li>
-          )
-        })}
+        {rows.map((row) => (
+          <li key={row.id}>
+            <div className="insight-card-head">
+              <InsightTile module={row.module} />
+              <InsightSeverity severity={row.severity} />
+            </div>
+            <h3>{row.title}</h3>
+            <InsightEvidence slug={slug} rule={row.rule_key} />
+          </li>
+        ))}
       </ol>
     </section>
   )

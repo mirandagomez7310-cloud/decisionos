@@ -1,6 +1,8 @@
 import Link from 'next/link'
+import { Search } from 'lucide-react'
 import {
   AnalysisHeading,
+  DeltaBar,
   AnalysisPagination,
   AnalysisSummary,
   AnalysisTable,
@@ -86,6 +88,16 @@ export async function AnalysisPage({
         <EmptySales slug={slug} role={data.role} />
       </>
     )
+  // Escala común de las barras de la página: el mayor cambio (ventas) o margen (margen) en valor absoluto.
+  // En margen, tope de 100 puntos: un margen extremo (−900 %) no debe aplastar las demás barras.
+  const scale = Math.max(
+    1,
+    ...data.rows.map((row) =>
+      sales
+        ? Math.abs(row.delta)
+        : Math.min(100, Math.abs(row.margin_pct ?? 0)),
+    ),
+  )
   const orders = sales ? salesOrders : marginOrders
   const field = { ...salesOrders, ...marginOrders }[search.orden][0]
   const ascending = { ...salesOrders, ...marginOrders }[search.orden][1]
@@ -125,14 +137,17 @@ export async function AnalysisPage({
         <form method="get" action={path} className="analysis-search">
           <input type="hidden" name="periodo" value={search.periodo} />
           <input type="hidden" name="vista" value={search.vista} />
-          <label>
+          <label className="search-field">
             Buscar por nombre
-            <input
-              type="search"
-              name="q"
-              defaultValue={search.q}
-              maxLength={80}
-            />
+            <span>
+              <Search aria-hidden="true" />
+              <input
+                type="search"
+                name="q"
+                defaultValue={search.q}
+                maxLength={80}
+              />
+            </span>
           </label>
           <label>
             Orden
@@ -144,29 +159,34 @@ export async function AnalysisPage({
               ))}
             </select>
           </label>
-          <button className="action-button" type="submit">
+          <button className="action-button compact" type="submit">
             Aplicar
           </button>
         </form>
       </div>
-      <AnalysisSummary>
-        {sales ? (
-          `Suben ${data.counts[0]} · Bajan ${data.counts[1]} · Sin cambio ${data.counts[2]}`
-        ) : (
-          <>
-            Con pérdida {data.counts[0]} · Sin datos de costo {data.counts[1]}
-            {data.counts[1]! > 0 && (
-              <>
-                {' '}
-                ·{' '}
-                <Link className="underline" href={`/o/${slug}/imports/new`}>
-                  Cómo importar costos
-                </Link>
-              </>
-            )}
-          </>
-        )}
-      </AnalysisSummary>
+      {sales ? (
+        <AnalysisSummary
+          bar
+          parts={[
+            ['Suben', data.counts[0]!, 'up'],
+            ['Bajan', data.counts[1]!, 'down'],
+            ['Sin cambio', data.counts[2]!, 'flat'],
+          ]}
+        />
+      ) : (
+        <AnalysisSummary
+          parts={[
+            ['Con pérdida', data.counts[0]!, 'down'],
+            ['Sin datos de costo', data.counts[1]!, 'missing'],
+          ]}
+        >
+          {data.counts[1]! > 0 && (
+            <Link className="underline" href={`/o/${slug}/imports/new`}>
+              Cómo importar costos
+            </Link>
+          )}
+        </AnalysisSummary>
+      )}
       {!data.rows.length ? (
         <p>
           {search.q ? (
@@ -238,7 +258,12 @@ export async function AnalysisPage({
                     </th>
                     {sales ? (
                       <>
-                        <td>{formatMoneyChange(row.delta)}</td>
+                        <td>
+                          <div className="delta-cell">
+                            {formatMoneyChange(row.delta)}
+                            <DeltaBar value={row.delta} scale={scale} />
+                          </div>
+                        </td>
                         <td>
                           {row.prev_net_sales === 0 || row.delta_pct === null
                             ? 'Sin comparación'
@@ -251,12 +276,15 @@ export async function AnalysisPage({
                       <>
                         <td className={risk ? 'risk-cell' : undefined}>
                           {!missing && row.margin_pct !== null ? (
-                            <>
-                              {formatPercent(row.margin_pct)}
-                              {risk && (
-                                <span className="risk-label">Riesgo</span>
-                              )}
-                            </>
+                            <div className="delta-cell">
+                              <span>
+                                {formatPercent(row.margin_pct)}
+                                {risk && (
+                                  <span className="risk-label">Riesgo</span>
+                                )}
+                              </span>
+                              <DeltaBar value={row.margin_pct} scale={scale} />
+                            </div>
                           ) : (
                             <span className="label-condensed">
                               Sin datos de costo
@@ -268,9 +296,23 @@ export async function AnalysisPage({
                         </td>
                         <td>{formatMoney(row.net_sales)}</td>
                         <td className="label-condensed">
-                          {missing
-                            ? 'Sin datos de costo'
-                            : `${new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 }).format(row.coverage!)} %`}
+                          {missing ? (
+                            'Sin datos de costo'
+                          ) : (
+                            <div className="delta-cell">
+                              {`${new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 }).format(row.coverage!)} %`}
+                              <span
+                                className="coverage-meter"
+                                aria-hidden="true"
+                              >
+                                <span
+                                  style={{
+                                    width: `${Math.min(100, row.coverage!)}%`,
+                                  }}
+                                />
+                              </span>
+                            </div>
+                          )}
                         </td>
                       </>
                     )}

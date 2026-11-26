@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import { Sparkles } from 'lucide-react'
 import { adviceError, priorityLabel, remainingAdvice } from './advisor'
+import { InsightKind } from './components'
 import { AdvisorRefresh } from './advisor-refresh'
 import type { getAdvisor } from './queries'
 import { insightStates, insightStatuses } from './schemas'
@@ -32,22 +34,22 @@ export function Recommendations({
         : null
 
   return (
-    <section
-      aria-labelledby="advisor-heading"
-      className="mb-6 grid gap-2 [&_:focus-visible]:outline-foreground"
-    >
-      <div className="insight-meta">
-        <h2 id="advisor-heading" className="text-xl font-semibold">
-          Recomendaciones
-        </h2>
-        <span className="border border-upright px-2 text-sm">
-          Generado por IA
+    <section aria-labelledby="advisor-heading" className="advisor card">
+      <div className="advisor-head">
+        <span className="advisor-tile" aria-hidden="true">
+          <Sparkles />
         </span>
+        <div>
+          <div className="insight-meta">
+            <h2 id="advisor-heading">Recomendaciones</h2>
+            <span className="ai-tag">Generado por IA</span>
+          </div>
+          <p>
+            Hipótesis y sugerencias redactadas a partir de los hallazgos. Las
+            cifras salen de tus datos
+          </p>
+        </div>
       </div>
-      <p>
-        Hipótesis y sugerencias redactadas a partir de los hallazgos. Las cifras
-        salen de tus datos
-      </p>
       {canChange && (
         <>
           <AdviceRequestForm slug={slug} busy={busy} blocked={blocked} />
@@ -65,20 +67,20 @@ export function Recommendations({
       )}
       {run?.status === 'failed' && <p role="alert">{adviceError(run.error)}</p>}
       {advisor.recommendations.length > 0 && (
-        <ol className="insight-list">
+        <ol className="insight-list advisor-list">
           {advisor.recommendations.map((row) => (
             <li key={row.id}>
               <article id={`insight-${row.id}`}>
                 <div className="insight-meta">
-                  <span className="label-condensed">
-                    {row.kind === 'hypothesis' ? 'Hipótesis' : 'Sugerencia'}
+                  <InsightKind kind={row.kind} />
+                  <span className="insight-context">
+                    {priorityLabel(row.priority)}
                   </span>
-                  <span>{priorityLabel(row.priority)}</span>
                 </div>
                 <h3>{row.title}</h3>
                 <p>{row.body}</p>
                 {row.cites.some((id) => advisor.citations.has(id)) && (
-                  <div>
+                  <div className="advisor-cites">
                     <p>Se apoya en:</p>
                     <ul>
                       {row.cites.map((id) => {

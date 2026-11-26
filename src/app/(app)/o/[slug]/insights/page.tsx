@@ -1,10 +1,13 @@
 import Link from 'next/link'
+import { CircleCheck } from 'lucide-react'
 import { EmptyImport } from '@/components/empty-import'
 import { AnalysisHeading, QueryAlert } from '@/features/analysis/components'
 import type { AnalysisPageProps } from '@/features/analysis/page'
 import {
   InsightEvidence,
+  InsightKind,
   InsightSeverity,
+  InsightTile,
 } from '@/features/insights/components'
 import { getAdvisor, getInsights } from '@/features/insights/queries'
 import { Recommendations } from '@/features/insights/recommendations'
@@ -32,11 +35,6 @@ const modules = {
   profit: 'Margen',
   inventory: 'Inventario',
   cash: 'Cobranza',
-}
-const kinds = {
-  fact: 'Hecho',
-  hypothesis: 'Hipótesis',
-  suggestion: 'Sugerencia',
 }
 
 export default async function Page({
@@ -146,17 +144,20 @@ export default async function Page({
         </nav>
       </div>
       {rows.size ? (
-        <ol className="insight-list">
+        <ol className="insight-list insight-cards">
           {sortInsights([...rows.values()]).map((row) => (
             <li key={row.id}>
-              <article id={`insight-${row.id}`}>
-                <div className="insight-meta">
-                  <InsightSeverity severity={row.severity} />
-                  <span className="label-condensed">{modules[row.module]}</span>
-                  <span className="label-condensed">{kinds[row.kind]}</span>
-                  <span>
+              <article id={`insight-${row.id}`} className="card">
+                <div className="insight-card-head">
+                  <InsightTile module={row.module} />
+                  <p className="insight-context">
+                    {modules[row.module]} ·{' '}
                     {formatInsightPeriod(row.period_start, row.period_end)}
-                  </span>
+                  </p>
+                  <div className="insight-meta">
+                    <InsightSeverity severity={row.severity} />
+                    <InsightKind kind={row.kind} />
+                  </div>
                 </div>
                 <h2>{row.title}</h2>
                 <p>{row.body}</p>
@@ -174,12 +175,15 @@ export default async function Page({
           ))}
         </ol>
       ) : (
-        <div>
-          <p>Nada en {search.estado}</p>
+        <section className="dashboard-empty card insight-empty">
+          <span className="empty-glyph" aria-hidden="true">
+            <CircleCheck />
+          </span>
+          <h2>Nada en {search.estado}</h2>
           {search.estado === 'nuevos' && (
             <p>Los hallazgos se recalculan cada vez que importas datos.</p>
           )}
-        </div>
+        </section>
       )}
     </>
   )

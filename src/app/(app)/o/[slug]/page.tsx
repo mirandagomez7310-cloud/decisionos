@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ArrowDownRight, ArrowUpRight, ChartLine, Percent } from 'lucide-react'
 import { DashboardInsights } from '@/features/insights/components'
-import { QueryAlert } from '@/features/analysis/components'
+import { DeltaBar, QueryAlert } from '@/features/analysis/components'
 import { getDashboard } from '@/features/dashboard/queries'
 import { EmptySales } from '@/features/dashboard/empty-sales'
 import { PeriodSelect } from '@/features/dashboard/period-select'
@@ -19,7 +19,13 @@ import {
 } from '@/lib/format'
 import type { MetricMovement } from '@/lib/supabase/types'
 
-function Change({ value, children }: { value: number | null; children: string }) {
+function Change({
+  value,
+  children,
+}: {
+  value: number | null
+  children: string
+}) {
   // Tendencia sobre el valor que se muestra (un decimal): «+0.0» no lleva flecha.
   const shown = value === null ? 0 : Math.round(value * 10) / 10
   const trend = shown === 0 ? undefined : shown > 0 ? 'up' : 'down'
@@ -72,14 +78,7 @@ function Movements({
                 <td>
                   <div className="delta-cell">
                     {formatMoneyChange(row.delta)}
-                    <span className="delta-bar" aria-hidden="true">
-                      {row.delta !== 0 && (
-                        <span
-                          data-trend={row.delta > 0 ? 'up' : 'down'}
-                          style={{ width: `${(Math.abs(row.delta) / scale) * 50}%` }}
-                        />
-                      )}
-                    </span>
+                    <DeltaBar value={row.delta} scale={scale} />
                   </div>
                 </td>
                 {products && (
@@ -170,13 +169,18 @@ export default async function Page({
       >
         <section className="dashboard-metric card">
           <div className="metric-head">
-            <span className="metric-icon" style={{ '--tone': 'var(--m-sales)' } as React.CSSProperties}>
+            <span
+              className="metric-icon"
+              style={{ '--tone': 'var(--m-sales)' } as React.CSSProperties}
+            >
               <ChartLine aria-hidden="true" />
             </span>
             <h2>Ventas netas</h2>
             <span className="metric-period">{currentLabel}</span>
           </div>
-          <p className="figure dashboard-figure">{formatMoneyWhole(s.net_sales)}</p>
+          <p className="figure dashboard-figure">
+            {formatMoneyWhole(s.net_sales)}
+          </p>
           <p className="metric-comparison">
             <Change value={s.net_sales_change_pct}>
               {s.net_sales_change_pct === null
@@ -198,7 +202,10 @@ export default async function Page({
         </section>
         <section className="dashboard-metric card">
           <div className="metric-head">
-            <span className="metric-icon" style={{ '--tone': 'var(--m-margin)' } as React.CSSProperties}>
+            <span
+              className="metric-icon"
+              style={{ '--tone': 'var(--m-margin)' } as React.CSSProperties}
+            >
               <Percent aria-hidden="true" />
             </span>
             <h2>Margen bruto</h2>
