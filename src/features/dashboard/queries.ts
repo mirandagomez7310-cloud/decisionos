@@ -71,7 +71,7 @@ export async function getDashboard(slug: string, rawPeriod?: string) {
     // Pocas filas (8 reglas al mes): se ordena por gravedad en TS.
     db
       .from('insights')
-      .select('id, title, severity, rule_key, created_at')
+      .select('id, title, severity, rule_key, module, created_at')
       .eq('organization_id', args.p_organization_id)
       .eq('status', 'new')
       .order('created_at', { ascending: false })

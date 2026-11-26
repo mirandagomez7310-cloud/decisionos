@@ -22,18 +22,6 @@ const modules: Record<Insight['module'], [LucideIcon, string]> = {
   inventory: [Package, '--m-inventory'],
   cash: [Wallet, '--m-receivables'],
 }
-const paths: [string, Insight['module']][] = [
-  ['/receivables', 'cash'],
-  ['/inventory', 'inventory'],
-  ['/margin', 'profit'],
-  ['/sales', 'sales'],
-]
-/** Módulo de un hallazgo que solo trae su regla: se deduce de la ruta de su evidencia. */
-function moduleOfEvidence(href: string | undefined) {
-  const pathname = href && new URL(href, 'http://local').pathname
-  return pathname ? paths.find(([path]) => pathname.endsWith(path))?.[1] : undefined
-}
-
 export function InsightTile({ module }: { module?: Insight['module'] }) {
   const [Icon, tone] = module ? modules[module] : [Activity, '--m-insights']
   return (
@@ -100,7 +88,7 @@ export function DashboardInsights({
   rows,
 }: {
   slug: string
-  rows: Pick<Insight, 'id' | 'title' | 'severity' | 'rule_key'>[]
+  rows: Pick<Insight, 'id' | 'title' | 'severity' | 'rule_key' | 'module'>[]
 }) {
   if (!rows.length) return null
   return (
@@ -115,9 +103,7 @@ export function DashboardInsights({
         {rows.map((row) => (
           <li key={row.id}>
             <div className="insight-card-head">
-              <InsightTile
-                module={moduleOfEvidence(evidenceHref(slug, row.rule_key))}
-              />
+              <InsightTile module={row.module} />
               <InsightSeverity severity={row.severity} />
             </div>
             <h3>{row.title}</h3>

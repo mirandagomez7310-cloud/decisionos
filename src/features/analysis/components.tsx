@@ -1,11 +1,6 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-} from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react'
 
 export function AnalysisHeading({
   title,
@@ -60,7 +55,11 @@ export function DeltaBar({ value, scale }: { value: number; scale: number }) {
   )
 }
 
-type SummaryPart =[label: string, count: number, tone: 'up' | 'down' | 'flat' | 'missing']
+type SummaryPart = [
+  label: string,
+  count: number,
+  tone: 'up' | 'down' | 'flat' | 'missing',
+]
 
 /**
  * Resumen del listado. Con `parts`, cada recuento va en su chip; con `bar`, además
@@ -83,11 +82,7 @@ export function AnalysisSummary({
         <div className="summary-bar" aria-hidden="true">
           {parts.map(([label, count, tone]) =>
             count ? (
-              <span
-                key={label}
-                data-tone={tone}
-                style={{ flexGrow: count }}
-              />
+              <span key={label} data-tone={tone} style={{ flexGrow: count }} />
             ) : null,
           )}
         </div>

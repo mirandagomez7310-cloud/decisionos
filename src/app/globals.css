@@ -205,12 +205,12 @@
   }
   /* Controles nativos y de shadcn con la misma caja: borde fino, radio 10 px y texto centrado en 44 px. */
   input:not(
-      [type='checkbox'],
-      [type='radio'],
-      [type='range'],
-      [type='hidden'],
-      [type='file']
-    ),
+    [type='checkbox'],
+    [type='radio'],
+    [type='range'],
+    [type='hidden'],
+    [type='file']
+  ),
   select,
   textarea {
     height: auto;
@@ -399,7 +399,9 @@ a.underline:hover {
   min-height: 100dvh;
 }
 .app-frame > .work-content {
-  padding-bottom: calc(var(--tabbar-height) + 32px + env(safe-area-inset-bottom));
+  padding-bottom: calc(
+    var(--tabbar-height) + 32px + env(safe-area-inset-bottom)
+  );
 }
 .app-sidebar {
   display: none;
@@ -1497,7 +1499,7 @@ a.underline:hover {
   pointer-events: none;
 }
 .search-field input {
-  min-width: 220px;
+  min-width: min(220px, 100%);
   padding-left: 36px;
   border-color: transparent;
   background: var(--fill);
@@ -1763,6 +1765,7 @@ a.underline:hover {
 }
 .summary-bar > span {
   min-width: 4px;
+  background: var(--tone);
 }
 .summary-chip {
   display: inline-flex;
@@ -1781,20 +1784,17 @@ a.underline:hover {
   border-radius: 3px;
   background: var(--tone);
 }
-[data-tone='up'] {
+.summary-chips [data-tone='up'] {
   --tone: var(--gain);
 }
-[data-tone='down'] {
+.summary-chips [data-tone='down'] {
   --tone: var(--loss);
 }
-[data-tone='flat'] {
+.summary-chips [data-tone='flat'] {
   --tone: var(--series-previous);
 }
-[data-tone='missing'] {
+.summary-chips [data-tone='missing'] {
   --tone: var(--fill-strong);
-}
-.summary-bar > span {
-  background: var(--tone);
 }
 .analysis-scroll {
   overflow-x: auto;
@@ -1813,6 +1813,10 @@ a.underline:hover {
 }
 .analysis-table tbody tr:hover {
   background: color-mix(in srgb, var(--foreground) 3%, transparent);
+}
+/* La columna fija tiene fondo opaco: se tiñe aparte para que la fila no quede partida. */
+.analysis-table tbody tr:hover th {
+  background: color-mix(in srgb, var(--foreground) 3%, var(--surface));
 }
 .analysis-table thead th {
   padding-block: 14px 10px;

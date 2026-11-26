@@ -89,10 +89,13 @@ export async function AnalysisPage({
       </>
     )
   // Escala común de las barras de la página: el mayor cambio (ventas) o margen (margen) en valor absoluto.
+  // En margen, tope de 100 puntos: un margen extremo (−900 %) no debe aplastar las demás barras.
   const scale = Math.max(
     1,
     ...data.rows.map((row) =>
-      Math.abs((sales ? row.delta : row.margin_pct) ?? 0),
+      sales
+        ? Math.abs(row.delta)
+        : Math.min(100, Math.abs(row.margin_pct ?? 0)),
     ),
   )
   const orders = sales ? salesOrders : marginOrders
@@ -298,8 +301,15 @@ export async function AnalysisPage({
                           ) : (
                             <div className="delta-cell">
                               {`${new Intl.NumberFormat('es-MX', { maximumFractionDigits: 1 }).format(row.coverage!)} %`}
-                              <span className="coverage-meter" aria-hidden="true">
-                                <span style={{ width: `${Math.min(100, row.coverage!)}%` }} />
+                              <span
+                                className="coverage-meter"
+                                aria-hidden="true"
+                              >
+                                <span
+                                  style={{
+                                    width: `${Math.min(100, row.coverage!)}%`,
+                                  }}
+                                />
                               </span>
                             </div>
                           )}
