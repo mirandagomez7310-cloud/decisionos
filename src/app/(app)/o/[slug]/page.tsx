@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ArrowDownRight, ArrowUpRight, ChartLine, Percent } from 'lucide-react'
 import { DashboardInsights } from '@/features/insights/components'
-import { QueryAlert } from '@/features/analysis/components'
+import { DeltaBar, QueryAlert } from '@/features/analysis/components'
 import { getDashboard } from '@/features/dashboard/queries'
 import { EmptySales } from '@/features/dashboard/empty-sales'
 import { PeriodSelect } from '@/features/dashboard/period-select'
@@ -72,14 +72,7 @@ function Movements({
                 <td>
                   <div className="delta-cell">
                     {formatMoneyChange(row.delta)}
-                    <span className="delta-bar" aria-hidden="true">
-                      {row.delta !== 0 && (
-                        <span
-                          data-trend={row.delta > 0 ? 'up' : 'down'}
-                          style={{ width: `${(Math.abs(row.delta) / scale) * 50}%` }}
-                        />
-                      )}
-                    </span>
+                    <DeltaBar value={row.delta} scale={scale} />
                   </div>
                 </td>
                 {products && (
