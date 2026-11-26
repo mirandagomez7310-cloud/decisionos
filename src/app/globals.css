@@ -203,6 +203,52 @@
   textarea {
     background-color: var(--surface);
   }
+  /* Controles nativos y de shadcn con la misma caja: borde fino, radio 10 px y texto centrado en 44 px. */
+  input:not(
+      [type='checkbox'],
+      [type='radio'],
+      [type='range'],
+      [type='hidden'],
+      [type='file']
+    ),
+  select,
+  textarea {
+    height: auto;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--separator-strong);
+    border-radius: var(--radius);
+    color: var(--foreground);
+    font-size: 15px;
+    line-height: 1.3;
+  }
+  select {
+    padding-right: 32px;
+  }
+  input[type='file'] {
+    max-width: 100%;
+    padding: 10px;
+    border: 1px dashed var(--separator-strong);
+    border-radius: 12px;
+    color: var(--muted-foreground);
+    font-size: 14px;
+  }
+  input[type='file']::file-selector-button {
+    margin-right: 12px;
+    padding: 8px 16px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--fill);
+    color: var(--foreground);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  /* Etiqueta encima de su campo: separación fija para que no toque el borde. */
+  [data-slot='label'] + :is(input, select, textarea, [data-slot]),
+  label:not(:has(input, select, textarea)) + :is(input, select, textarea) {
+    margin-top: 6px;
+  }
   input::placeholder,
   textarea::placeholder {
     color: var(--muted-foreground);
@@ -564,7 +610,8 @@ a.underline:hover {
 
 .work-content {
   width: 100%;
-  max-width: 1280px;
+  /* Llena el área junto a la barra lateral hasta 1600 px, como una app de macOS. */
+  max-width: 1600px;
   margin-inline: auto;
   padding: 20px 16px 32px;
   min-width: 0;
@@ -582,6 +629,7 @@ a.underline:hover {
 .auth-stage {
   position: relative;
   display: grid;
+  align-content: start;
   justify-items: center;
   min-height: 100dvh;
   padding: 20px 16px 40px;
@@ -1283,7 +1331,7 @@ a.underline:hover {
 }
 .dashboard-explain > .insight-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: 12px;
   margin-block: 12px;
   border: 0;
