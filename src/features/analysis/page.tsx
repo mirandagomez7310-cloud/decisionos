@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Search } from 'lucide-react'
 import {
   AnalysisHeading,
   DeltaBar,
@@ -7,6 +6,7 @@ import {
   AnalysisSummary,
   AnalysisTable,
   QueryAlert,
+  SearchField,
   SortHeader,
 } from './components'
 import { tableHref } from './shared'
@@ -137,18 +137,7 @@ export async function AnalysisPage({
         <form method="get" action={path} className="analysis-search">
           <input type="hidden" name="periodo" value={search.periodo} />
           <input type="hidden" name="vista" value={search.vista} />
-          <label className="search-field">
-            Buscar por nombre
-            <span>
-              <Search aria-hidden="true" />
-              <input
-                type="search"
-                name="q"
-                defaultValue={search.q}
-                maxLength={80}
-              />
-            </span>
-          </label>
+          <SearchField defaultValue={search.q} />
           <label>
             Orden
             <select name="orden" defaultValue={search.orden}>

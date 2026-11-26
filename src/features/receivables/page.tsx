@@ -4,12 +4,20 @@ import {
   AnalysisHeading,
   AnalysisPagination,
   AnalysisTable,
+  MetricIcon,
   QueryAlert,
+  SearchField,
   SortHeader,
 } from '@/features/analysis/components'
 import type { AnalysisPageProps } from '@/features/analysis/page'
 import { tableHref } from '@/features/analysis/shared'
-import { formatDay, formatMoney, formatPercent } from '@/lib/format'
+import { CalendarClock, Wallet } from 'lucide-react'
+import {
+  formatDay,
+  formatMoney,
+  formatMoneyWhole,
+  formatPercent,
+} from '@/lib/format'
 import { requireRole } from '@/lib/server/auth'
 import { getReceivables } from './queries'
 import {
@@ -110,23 +118,68 @@ export async function ReceivablesPage({
   return (
     <>
       {heading}
-      <div className="dashboard-metrics receivables-metrics">
-        <section className="dashboard-metric">
-          <h2 className="label-condensed">Saldo por cobrar</h2>
+      <div className="dashboard-metrics">
+        <section className="dashboard-metric card">
+          <div className="metric-head">
+            <MetricIcon tone="--m-receivables">
+              <Wallet />
+            </MetricIcon>
+            <h2>Saldo por cobrar</h2>
+          </div>
           <p className="figure dashboard-figure">
-            {formatMoney(summary.open_balance)}
+            {formatMoneyWhole(summary.open_balance)}
           </p>
+          <div className="aging">
+            <div className="aging-bar" aria-hidden="true">
+              {aging.map(([label, key], index) =>
+                summary[key] > 0 ? (
+                  <span
+                    key={key}
+                    data-step={index}
+                    style={{ flexGrow: summary[key] }}
+                    title={label}
+                  />
+                ) : null,
+              )}
+            </div>
+            <dl aria-label="Antigüedad de saldos (días)">
+              {aging.map(([label, key], index) => (
+                <div key={key} data-step={index}>
+                  <dt>{label}</dt>
+                  <dd>{formatMoney(summary[key])}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         </section>
-        <section className="dashboard-metric">
-          <h2 className="label-condensed">Saldo vencido</h2>
+        <section className="dashboard-metric card">
+          <div className="metric-head">
+            <MetricIcon tone="--m-receivables">
+              <CalendarClock />
+            </MetricIcon>
+            <h2>Saldo vencido</h2>
+          </div>
           <p className="figure dashboard-figure">
-            {formatMoney(summary.overdue_balance)}
+            {formatMoneyWhole(summary.overdue_balance)}
+            {summary.overdue_pct !== null && (
+              <span className="margin-rate">
+                {' '}
+                · {formatPercent(summary.overdue_pct)}
+              </span>
+            )}
           </p>
-          {summary.overdue_pct !== null && (
-            <p className="metric-comparison">
-              {formatPercent(summary.overdue_pct)} del saldo por cobrar
-            </p>
-          )}
+          <p className="metric-comparison">
+            {summary.d90_plus > 0 ? (
+              <>
+                <strong data-trend="down">
+                  {formatMoney(summary.d90_plus)}
+                </strong>{' '}
+                con más de 90 días
+              </>
+            ) : (
+              'Nada con más de 90 días'
+            )}
+          </p>
           {summary.top5_share_pct !== null && (
             <p className="metric-comparison">
               Los 5 clientes con más saldo deben el{' '}
@@ -135,44 +188,6 @@ export async function ReceivablesPage({
           )}
         </section>
       </div>
-
-      <section
-        className="analysis-scroll receivables-aging"
-        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- La región desplazable requiere foco para recorrerla con teclado en móvil.
-        tabIndex={0}
-        aria-label="Antigüedad de saldos"
-      >
-        <table className="metrics-table">
-          <caption className="label-condensed">
-            Antigüedad de saldos (días)
-          </caption>
-          <thead>
-            <tr>
-              {aging.map(([label, key]) => (
-                <th key={key} scope="col">
-                  {label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              {aging.map(([, key]) => (
-                <td
-                  key={key}
-                  className={
-                    key === 'd90_plus' && summary[key] > 0
-                      ? 'risk-cell'
-                      : undefined
-                  }
-                >
-                  {formatMoney(summary[key])}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-      </section>
 
       <div className="analysis-controls">
         <nav aria-label="Filtrar por riesgo" className="analysis-switch">
@@ -188,15 +203,7 @@ export async function ReceivablesPage({
         </nav>
         <form method="get" action={path} className="analysis-search">
           <input type="hidden" name="riesgo" value={search.riesgo} />
-          <label>
-            Buscar por nombre
-            <input
-              type="search"
-              name="q"
-              defaultValue={search.q}
-              maxLength={80}
-            />
-          </label>
+          <SearchField defaultValue={search.q} />
           <label>
             Orden
             <select name="orden" defaultValue={search.orden}>
@@ -207,7 +214,7 @@ export async function ReceivablesPage({
               ))}
             </select>
           </label>
-          <button className="action-button" type="submit">
+          <button className="action-button compact" type="submit">
             Aplicar
           </button>
         </form>
@@ -247,21 +254,24 @@ export async function ReceivablesPage({
                       : undefined
                   }
                 >
-                  {row.credit_used_pct === null
-                    ? 'Sin límite'
-                    : formatPercent(row.credit_used_pct)}
+                  {row.credit_used_pct === null ? (
+                    'Sin límite'
+                  ) : (
+                    <div className="delta-cell">
+                      {formatPercent(row.credit_used_pct)}
+                      <span className="usage-meter" aria-hidden="true">
+                        <span
+                          style={{
+                            width: `${Math.min(100, row.credit_used_pct)}%`,
+                          }}
+                        />
+                      </span>
+                    </div>
+                  )}
                 </td>
                 <td>{formatPercent(row.share_pct)}</td>
                 <td>
-                  <span
-                    className={
-                      row.risk === 'bajo'
-                        ? 'text-muted-foreground'
-                        : row.risk === 'alto'
-                          ? 'risk-label risk-cell'
-                          : 'risk-label'
-                    }
-                  >
+                  <span className="risk-chip" data-risk={row.risk}>
                     {riskLabels[row.risk]}
                   </span>
                 </td>

@@ -1,3 +1,5 @@
+import { AnalysisLoading } from '@/features/analysis/loading'
+
 export default function Loading() {
-  return <output>Cargando auditoría…</output>
+  return <AnalysisLoading title="auditoría" columns={4} />
 }

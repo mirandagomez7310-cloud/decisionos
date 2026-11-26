@@ -5,22 +5,28 @@ export function ActionForm({
   children,
   label,
   disabled = false,
+  secondary = false,
 }: {
   action: (form: FormData) => Promise<{ error?: string; ok?: boolean }>
   children?: ReactNode
   label: string
   disabled?: boolean
+  secondary?: boolean
 }) {
   const [state, submit, pending] = useActionState(
     async (_: { error?: string; ok?: boolean }, form: FormData) => action(form),
     {},
   )
   return (
-    <form action={submit} className="space-y-4">
+    <form action={submit} className="action-form">
       {children}
-      {state.error && <p role="alert">{state.error}</p>}
+      {state.error && (
+        <p className="field-error" role="alert">
+          {state.error}
+        </p>
+      )}
       <button
-        className="rounded border px-4 py-2 disabled:opacity-50"
+        className={secondary ? 'secondary-button' : 'action-button'}
         disabled={disabled || pending}
       >
         {pending ? 'Guardando…' : label}

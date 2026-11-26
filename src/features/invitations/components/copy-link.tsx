@@ -1,11 +1,11 @@
 'use client'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
 export function CopyLink({ url }: { url: string }) {
   const [message, setMessage] = useState('')
   return (
     <>
-      <Button
+      <button
+        className="secondary-button compact"
         type="button"
         onClick={async () => {
           try {
@@ -21,7 +21,7 @@ export function CopyLink({ url }: { url: string }) {
         }}
       >
         Copiar enlace
-      </Button>
+      </button>
       <output>{message}</output>
     </>
   )

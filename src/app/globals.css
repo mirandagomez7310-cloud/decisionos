@@ -1526,8 +1526,19 @@ a.underline:hover {
     scrollbar-width: none;
   }
   .analysis-switch a {
-    flex: none;
+    flex: 1 0 auto;
     white-space: nowrap;
+  }
+  /* A todo el ancho en móvil (DESIGN.md): segmentos repartidos, buscador en su fila. */
+  .analysis-controls > .analysis-switch,
+  .analysis-search {
+    width: 100%;
+  }
+  .analysis-search .search-field {
+    flex-basis: 100%;
+  }
+  .analysis-search label:not(.search-field) {
+    flex: 1;
   }
 }
 .analysis-switch a[aria-current] {
@@ -1781,6 +1792,9 @@ a.underline:hover {
 .summary-chips [data-tone='flat'] {
   --tone: var(--series-previous);
 }
+.summary-chips [data-tone='risk'] {
+  --tone: var(--risk);
+}
 .summary-chips [data-tone='missing'] {
   --tone: var(--fill-strong);
 }
@@ -1860,9 +1874,7 @@ a.underline:hover {
   height: 16px;
 }
 /* Los importes no se parten: la región ya desplaza en horizontal. */
-.analysis-table td,
-.receivables-aging td,
-.receivables-aging th {
+.analysis-table td {
   white-space: nowrap;
 }
 .analysis-table th:first-child {
@@ -1890,25 +1902,451 @@ a.underline:hover {
   border-radius: 6px;
   background: var(--fill);
 }
-/* Inventario y Cobranza siguen con métricas en fila hasta R3. */
-.inventory-metrics .dashboard-metric,
-.receivables-metrics .dashboard-metric {
-  background: var(--surface);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+/* ---------- R3: Inventario, Cobranza, Importaciones, Catálogo y Ajustes ---------- */
+.dashboard-metrics + .analysis-summary {
+  margin-top: 0;
 }
-.inventory-metrics .dashboard-figure,
-.receivables-metrics .dashboard-figure {
+.analysis-summary.summary-chips {
+  margin-bottom: 20px;
+}
+
+/* Antigüedad de saldos: una sola tinta de pérdida que se intensifica con los días. */
+.aging {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+.aging [data-step='0'] {
+  --tone: var(--series-previous);
+}
+.aging [data-step='1'] {
+  --tone: color-mix(in srgb, var(--loss) 40%, transparent);
+}
+.aging [data-step='2'] {
+  --tone: color-mix(in srgb, var(--loss) 60%, transparent);
+}
+.aging [data-step='3'] {
+  --tone: color-mix(in srgb, var(--loss) 80%, transparent);
+}
+.aging [data-step='4'] {
+  --tone: var(--loss);
+}
+.aging-bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--fill);
+}
+.aging-bar > span {
+  min-width: 4px;
+  background: var(--tone);
+}
+.aging dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 8px 16px;
+}
+.aging dl > div {
+  display: grid;
+  gap: 2px;
+}
+.aging dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+.aging dt::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  background: var(--tone);
+}
+.aging dd {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Uso de crédito: neutro hasta el límite; por encima, riesgo. */
+.usage-meter {
+  position: relative;
+  width: 100%;
+  max-width: 96px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--fill);
+}
+.usage-meter > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--muted-foreground);
+}
+.risk-cell .usage-meter > span {
+  background: var(--risk);
+}
+
+/* Chips de riesgo y estado: píldora de 12 px, neutra salvo que signifique algo. */
+.risk-chip,
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--fill);
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.risk-chip[data-risk='alto'],
+.status-chip[data-tone='risk'] {
+  background: color-mix(in srgb, var(--risk) 12%, transparent);
+  color: var(--risk);
+}
+.risk-chip[data-risk='medio'],
+.status-chip[data-tone='warning'] {
+  background: color-mix(in srgb, var(--warning) 13%, transparent);
+  color: var(--warning);
+}
+
+/* Botones secundarios y de acción destructiva en línea. */
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid var(--separator-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+.secondary-button:hover {
+  background: var(--fill);
+}
+.secondary-button.compact {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 14px;
+}
+.action-button:disabled,
+.secondary-button:disabled,
+.danger-link:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+}
+.danger-link {
+  min-height: 36px;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  color: var(--risk);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.danger-link:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* Formularios en tarjeta: rótulo encima, campos nativos con su caja base. */
+.form-card {
+  display: grid;
+  gap: 16px;
+  max-width: 720px;
+  padding: 20px 22px;
+}
+.action-form {
+  display: grid;
+  justify-items: start;
+  gap: 16px;
+}
+.form-field {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+.form-field label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.form-field label + :is(input, select) {
+  margin-top: 0;
+}
+.form-field select,
+.form-field input[type='file'] {
+  width: 100%;
+  max-width: 420px;
+}
+.form-hint,
+.detail-empty {
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+.form-notice {
+  max-width: 720px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--warning) 13%, transparent);
+  font-size: 14px;
+}
+.mapping-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px 20px;
+  width: 100%;
+}
+
+/* Pasos del asistente de importación. */
+.import-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+.import-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.import-steps li > span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--fill);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.import-steps [aria-current='step'] {
+  color: var(--foreground);
+  font-weight: 600;
+}
+.import-steps [aria-current='step'] > span {
+  background: var(--action-fill);
+  color: var(--action-foreground);
+}
+.import-steps [data-done] > span {
+  background: var(--fill-strong);
+  color: var(--foreground);
+}
+
+/* Detalle de importación. */
+.import-overview {
+  display: grid;
+  gap: 4px;
+  padding: 20px 22px;
+}
+.import-overview .analysis-summary {
+  margin-block: 8px 4px;
+}
+.import-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+.import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 8px;
+}
+.summary-chip-total {
+  font-size: 14px;
+  color: var(--muted-foreground);
+}
+.detail-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 32px;
+}
+.detail-section > h2 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.detail-list {
+  display: grid;
+  padding-block: 4px;
+}
+.detail-list > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 12px 22px;
+  font-size: 15px;
+}
+.detail-list > li + li {
+  border-top: 1px solid var(--upright);
+}
+.detail-list strong {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.detail-list .field-error {
+  flex-basis: 100%;
+}
+.detail-muted {
+  color: var(--muted-foreground);
+  font-size: 14px;
+}
+.analysis-table .numeric {
+  text-align: right;
+}
+.analysis-table code {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+/* Catálogo: paginación y filas por página en una sola línea. */
+.catalog-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+.catalog-footer .analysis-pagination {
+  margin-top: 0;
+}
+
+/* Miembros e invitaciones. */
+.member-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.member-controls form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.member-controls select {
+  min-height: 36px;
+  padding-block: 4px;
+}
+.member-message,
+.member-locked {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: var(--muted-foreground);
   white-space: normal;
+}
+.member-email {
   overflow-wrap: anywhere;
 }
-.receivables-aging {
-  margin-block: 24px;
+.invite-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
 }
-.receivables-aging caption {
+.invite-form .form-field {
+  flex: 1 1 260px;
+  width: auto;
+}
+.invite-link {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  font-size: 14px;
+}
+.invite-link output {
+  max-width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--fill);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.revoke-form {
+  margin-left: auto;
+}
+@media (max-width: 767px) {
+  .form-card,
+  .import-overview {
+    padding: 18px 16px;
+  }
+  .detail-list > li {
+    padding-inline: 16px;
+  }
+}
+/* Vista previa de importación: columnas a su ancho natural, sin partir cabeceras. */
+.preview-table {
+  table-layout: auto;
+  width: max-content;
+  min-width: 100%;
+}
+.preview-table th,
+.preview-table td {
+  white-space: nowrap;
   text-align: left;
 }
-.receivables-aging th:first-child {
+.preview-table th:first-child {
+  width: auto;
+}
+.preview-table .numeric {
   text-align: right;
+}
+.analysis-table td.member-email {
+  text-align: left;
+}
+.risk-chip[data-risk='bajo'] {
+  background: none;
+  padding-inline: 0;
+}
+/* Tablas de texto (catálogo, importaciones, miembros, auditoría): a la izquierda salvo las cifras. */
+.text-table th,
+.text-table td {
+  text-align: left;
+}
+.text-table .numeric {
+  text-align: right;
+}
+/* Las cabeceras se parten entre palabras, nunca dentro de una. */
+.analysis-table thead th {
+  overflow-wrap: normal;
+}
+/* Barra de reparto dentro de una tarjeta KPI. */
+.dashboard-metric .analysis-summary {
+  margin-block: 16px 0;
+}
+.import-steps [data-done] {
+  color: var(--foreground);
+}
+.import-steps li > span svg {
+  width: 14px;
+  height: 14px;
+}
+/* Los rótulos de campo vienen en minúscula de la definición de cada tipo: tipo de frase. */
+.mapping-grid label::first-letter,
+.preview-table thead th::first-letter {
+  text-transform: uppercase;
 }

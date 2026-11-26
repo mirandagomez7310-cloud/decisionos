@@ -1,6 +1,12 @@
 import Link from 'next/link'
-import type { ReactNode } from 'react'
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react'
+import type { CSSProperties, ReactNode } from 'react'
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Search,
+} from 'lucide-react'
 
 export function AnalysisHeading({
   title,
@@ -19,6 +25,53 @@ export function AnalysisHeading({
       </div>
       {action}
     </div>
+  )
+}
+
+/** Tesela de icono con el color del módulo (`--m-*`); el icono es decorativo. */
+export function MetricIcon({
+  tone,
+  children,
+}: {
+  tone: `--m-${string}`
+  children: ReactNode
+}) {
+  return (
+    <span
+      className="metric-icon"
+      aria-hidden="true"
+      style={{ '--tone': `var(${tone})` } as CSSProperties}
+    >
+      {children}
+    </span>
+  )
+}
+
+/** Buscador estilo iOS con lupa; va dentro de un formulario GET. */
+export function SearchField({
+  label = 'Buscar por nombre',
+  name = 'q',
+  defaultValue,
+  maxLength = 80,
+}: {
+  label?: string
+  name?: string
+  defaultValue?: string
+  maxLength?: number
+}) {
+  return (
+    <label className="search-field">
+      {label}
+      <span>
+        <Search aria-hidden="true" />
+        <input
+          type="search"
+          name={name}
+          defaultValue={defaultValue}
+          maxLength={maxLength}
+        />
+      </span>
+    </label>
   )
 }
 
@@ -58,7 +111,7 @@ export function DeltaBar({ value, scale }: { value: number; scale: number }) {
 type SummaryPart = [
   label: string,
   count: number,
-  tone: 'up' | 'down' | 'flat' | 'missing',
+  tone: 'up' | 'down' | 'flat' | 'missing' | 'risk',
 ]
 
 /**
@@ -101,15 +154,21 @@ export function AnalysisSummary({
 
 export function AnalysisTable({
   label,
+  className,
   children,
 }: {
   label: string
+  className?: string
   children: ReactNode
 }) {
   /* oxlint-disable jsx-a11y/no-noninteractive-tabindex -- La región desplazable requiere foco para recorrer la tabla con teclado. */
   return (
     <section className="analysis-scroll card" tabIndex={0} aria-label={label}>
-      <table className="metrics-table analysis-table">{children}</table>
+      <table
+        className={`metrics-table analysis-table ${className ?? ''}`.trim()}
+      >
+        {children}
+      </table>
     </section>
   )
 }

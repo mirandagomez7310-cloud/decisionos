@@ -389,6 +389,21 @@ Tarjeta centrada con relleno fluido (40–88 px), glifo de acción de 88 px (deg
 ### Barra divergente
 Pista de 6 px de relleno, cero central marcado con el separador fuerte, ganancia a la derecha y pérdida a la izquierda; acompaña la cifra delta en tablas.
 
+### Barra de reparto en tarjeta KPI (R3)
+Barra de 8 px con radio 3 px dentro de la tarjeta, bajo la línea de comparación, con su leyenda de chips o pares rótulo-importe. En Inventario, «Sin movimiento» va en rojo de riesgo frente a «Con movimiento» en gris. En Cobranza, la antigüedad usa una sola tinta de pérdida que se intensifica con los días (gris para «Por vencer», pérdida al 40/60/80/100 %). La leyenda lleva el importe exacto; la cifra de cartel no lleva centavos.
+
+### Chips de estado y riesgo (R3)
+Píldora de 12 px / 600 con relleno neutro y tinta secundaria. Solo cambian de color cuando piden algo: aviso (naranja al 13 %) para «Pendiente» o riesgo medio, y riesgo (rojo al 12 %) para «Fallido» o riesgo alto. El riesgo bajo va como texto secundario, sin píldora.
+
+### Medidor de uso (R3)
+Como el de cobertura (6 px, máximo 96 px), pero neutro: tinta secundaria sobre relleno. Pasa a rojo de riesgo cuando la celda es de riesgo (uso de crédito por encima del 100 %).
+
+### Pasos del asistente (R3)
+Tres pasos en línea con círculo de 24 px: el actual en azul de acción, los hechos con una marca de verificación sobre relleno fuerte y los pendientes en relleno con tinta secundaria. Solo aparecen mientras la importación está pendiente.
+
+### Formularios en tarjeta (R3)
+Tarjeta de hasta 720 px con rótulo de 13 px / 600 encima de cada control nativo, con la caja base de 44 px. La acción principal es una píldora azul; la secundaria, una píldora con contorno; la destructiva en línea, texto en rojo de riesgo que se subraya al pasar el cursor.
+
 ## Do's and Don'ts
 
 ### Do:

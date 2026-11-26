@@ -1,3 +1,5 @@
+import { AnalysisLoading } from '@/features/analysis/loading'
+
 export default function Loading() {
-  return <output>Cargando miembros e invitaciones…</output>
+  return <AnalysisLoading title="miembros" columns={4} />
 }

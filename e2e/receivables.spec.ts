@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 import { test, email, importCsv, login, slug } from './fixtures'
-import { formatMoney } from '../src/lib/format'
+import { formatMoneyWhole } from '../src/lib/format'
 import { todayInMexico } from '../src/lib/server/metrics/period'
 
 test('owner consulta saldos exactos y filtra los clientes de riesgo alto', async ({
@@ -58,9 +58,9 @@ test('owner consulta saldos exactos y filtra los clientes de riesgo alto', async
   await expect(
     page
       .getByRole('heading', { name: 'Saldo por cobrar', exact: true })
-      .locator('..')
+      .locator('xpath=ancestor::section[1]')
       .locator('.dashboard-figure'),
-  ).toHaveText(formatMoney(total / 100))
+  ).toHaveText(formatMoneyWhole(total / 100))
   const region = page.getByRole('region', {
     name: 'Tabla de cuentas por cobrar por cliente',
   })
