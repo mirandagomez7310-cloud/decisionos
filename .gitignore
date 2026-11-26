@@ -46,3 +46,6 @@ test-results/
 playwright-report/
 .lighthouseci/
 .sb.env
+
+# Capturas de revisión de Impeccable (evidencia local)
+.impeccable/review/
