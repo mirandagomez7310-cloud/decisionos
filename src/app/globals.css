@@ -1388,28 +1388,16 @@ a.underline:hover {
 }
 
 /* ---------- Esqueletos ---------- */
-.skeleton-heading,
-.skeleton-metric,
-.skeleton-chart {
-  border-radius: var(--radius-card);
-  background: var(--fill);
-}
+/* El dashboard no usa esqueleto: su contenido va en el primer HTML para que el LCP no dependa del streaming. */
 .skeleton-heading {
   height: 60px;
   max-width: 420px;
   margin-bottom: 24px;
-}
-.skeleton-metric {
-  min-height: 210px;
-}
-.skeleton-chart {
-  height: 300px;
-  margin-bottom: 16px;
+  border-radius: var(--radius-card);
+  background: var(--fill);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .skeleton-heading,
-  .skeleton-metric,
-  .skeleton-chart {
+  .skeleton-heading {
     animation: pulse 1.6s ease-in-out infinite;
   }
   @keyframes pulse {
