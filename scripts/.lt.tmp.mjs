@@ -1,0 +1,13 @@
+import { chromium } from '@playwright/test'
+const browser = await chromium.launch()
+const page = await browser.newPage()
+page.on('console', (m) => console.log('console', m.type(), m.text().slice(0, 200)))
+page.on('response', (r) => r.status() >= 400 && console.log('resp', r.status(), r.url()))
+await page.goto('http://127.0.0.1:3000/login', { waitUntil: 'networkidle', timeout: 120000 })
+await page.getByLabel('Correo electrónico', { exact: true }).fill('demo@decisionos.local')
+await page.getByLabel('Contraseña', { exact: true }).fill('demo-decisionos-2026')
+await page.getByRole('button', { name: 'Entrar', exact: true }).click({ noWaitAfter: true })
+await page.waitForTimeout(20000)
+console.log('url', page.url())
+console.log((await page.locator('[role=alert]').allTextContents()).join(' | '))
+await browser.close()
