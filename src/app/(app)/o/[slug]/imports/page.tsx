@@ -1,9 +1,16 @@
 import Link from 'next/link'
 import { requireRole } from '@/lib/server/auth'
 import { createClient } from '@/lib/supabase/server'
-import { kindLabels, statusLabels } from '@/features/imports/queries'
+import { kindLabels } from '@/features/imports/queries'
 import { kindSchema } from '@/features/imports/schemas'
+import { StatusChip } from '@/features/imports/components/status-chip'
+import { AnalysisHeading, AnalysisTable } from '@/features/analysis/components'
+import { EmptyImport } from '@/components/empty-import'
+import { formatDateTime } from '@/lib/format'
 import type { Database } from '@/lib/supabase/types'
+
+const count = new Intl.NumberFormat('es-MX')
+
 export default async function ImportsPage({
   params,
 }: {
@@ -31,73 +38,80 @@ export default async function ImportsPage({
     rows.push(...data)
     if (data.length < 1000) break
   }
+  const canImport = role === 'owner' || role === 'admin'
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Importaciones</h1>
-      {(role === 'owner' || role === 'admin') && (
-        <Link className="action-button" href={`/o/${slug}/imports/new`}>
-          Nueva importación
-        </Link>
-      )}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <caption className="sr-only">
-            Importaciones de la organización
-          </caption>
+    <>
+      <AnalysisHeading
+        title="Importaciones"
+        action={
+          canImport &&
+          rows.length > 0 && (
+            <Link className="action-button" href={`/o/${slug}/imports/new`}>
+              Nueva importación
+            </Link>
+          )
+        }
+      >
+        Archivos CSV y Excel cargados a la organización
+      </AnalysisHeading>
+      {rows.length ? (
+        <AnalysisTable
+          label="Importaciones de la organización"
+          className="text-table"
+        >
           <thead>
             <tr>
-              {[
-                'Tipo',
-                'Archivo',
-                'Estado',
-                'Filas válidas',
-                'Filas con error',
-                'Fecha',
-                'Detalle',
-              ].map((label) => (
-                <th
-                  className={
-                    label.startsWith('Filas') ? 'p-2 text-right' : 'p-2'
-                  }
-                  scope="col"
-                  key={label}
-                >
-                  {label}
-                </th>
-              ))}
+              <th scope="col">Archivo</th>
+              <th scope="col">Estado</th>
+              <th scope="col" className="numeric">
+                Filas válidas
+              </th>
+              <th scope="col" className="numeric">
+                Filas con error
+              </th>
+              <th scope="col">Fecha</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
               <tr key={row.id}>
-                <td className="p-2">
-                  {kindLabels[kindSchema.parse(row.kind)]}
-                </td>
-                <td className="p-2">{row.original_filename}</td>
-                <td className="p-2">{statusLabels[row.status]}</td>
-                <td className="p-2 text-right">
-                  {row.ok_count.toLocaleString('es-MX')}
-                </td>
-                <td className="p-2 text-right">
-                  {row.error_count.toLocaleString('es-MX')}
-                </td>
-                <td className="p-2">
-                  {new Date(row.created_at).toLocaleString('es-MX')}
-                </td>
-                <td className="p-2">
+                <th scope="row">
                   <Link
                     className="underline"
                     href={`/o/${slug}/imports/${row.id}`}
                   >
-                    Ver {row.original_filename}
+                    {row.original_filename}
                   </Link>
+                  <span className="analysis-code">
+                    {kindLabels[kindSchema.parse(row.kind)]}
+                  </span>
+                </th>
+                <td>
+                  <StatusChip status={row.status} />
                 </td>
+                <td className="numeric">{count.format(row.ok_count)}</td>
+                <td
+                  className={row.error_count ? 'numeric risk-cell' : 'numeric'}
+                >
+                  {count.format(row.error_count)}
+                </td>
+                <td>{formatDateTime(row.created_at)}</td>
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
-      {!rows.length && <p>Aún no hay importaciones.</p>}
-    </div>
+        </AnalysisTable>
+      ) : (
+        <EmptyImport
+          slug={slug}
+          role={role}
+          title="Aún no hay importaciones"
+          label="Nueva importación"
+          subject="los datos"
+        >
+          Sube un CSV o Excel exportado de tu sistema: productos, clientes,
+          ventas, inventario o cuentas por cobrar.
+        </EmptyImport>
+      )}
+    </>
   )
 }

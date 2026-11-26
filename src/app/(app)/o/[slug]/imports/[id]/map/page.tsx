@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { getImport, readImportFile } from '@/features/imports/queries'
 import { saveMapping } from '@/features/imports/actions'
 import { ActionForm } from '@/features/imports/components/action-form'
+import { ImportSteps } from '@/features/imports/components/import-steps'
+import { AnalysisHeading } from '@/features/analysis/components'
 import { fields } from '@/lib/server/imports/kinds'
 import { suggestMapping } from '@/lib/server/imports/mapping'
 import { mappingSchema } from '@/features/imports/schemas'
@@ -23,41 +25,49 @@ export default async function MapImportPage({
     ...mappingSchema.parse(item.column_mapping),
   }
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Asignar columnas</h1>
-      <p>
-        Paso 2 de 3. {item.original_filename}. Los campos con * son
-        obligatorios.
-      </p>
+    <>
+      <AnalysisHeading title="Asignar columnas">
+        {item.original_filename}
+      </AnalysisHeading>
+      <ImportSteps current={2} />
       {warnings.map((warning) => (
-        <p key={warning}>{warning}</p>
+        <p key={warning} className="form-notice">
+          {warning}
+        </p>
       ))}
-      <ActionForm action={saveMapping} label="Validar filas">
-        <input type="hidden" name="organizationId" value={organization.id} />
-        <input type="hidden" name="importId" value={id} />
-        {fields[kind].map((field) => (
-          <div key={field.name}>
-            <label htmlFor={field.name}>
-              {field.label}
-              {field.required ? ' *' : ''}
-            </label>
-            <select
-              className="block border p-2"
-              id={field.name}
-              name={`mapping.${field.name}`}
-              required={field.required}
-              defaultValue={mapping[field.name] ?? ''}
-            >
-              <option value="">Sin asignar</option>
-              {headers.map((header) => (
-                <option value={header} key={header}>
-                  {header}
-                </option>
-              ))}
-            </select>
+      <section className="card form-card">
+        <p className="form-hint">
+          Elige qué columna de tu archivo corresponde a cada dato. Los campos
+          con * son obligatorios.
+        </p>
+        <ActionForm action={saveMapping} label="Validar filas">
+          <input type="hidden" name="organizationId" value={organization.id} />
+          <input type="hidden" name="importId" value={id} />
+          <div className="mapping-grid">
+            {fields[kind].map((field) => (
+              <div className="form-field" key={field.name}>
+                <label htmlFor={field.name}>
+                  {field.label}
+                  {field.required ? ' *' : ''}
+                </label>
+                <select
+                  id={field.name}
+                  name={`mapping.${field.name}`}
+                  required={field.required}
+                  defaultValue={mapping[field.name] ?? ''}
+                >
+                  <option value="">Sin asignar</option>
+                  {headers.map((header) => (
+                    <option value={header} key={header}>
+                      {header}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
           </div>
-        ))}
-      </ActionForm>
-    </div>
+        </ActionForm>
+      </section>
+    </>
   )
 }

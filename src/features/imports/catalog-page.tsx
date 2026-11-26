@@ -1,6 +1,15 @@
 import Link from 'next/link'
+import {
+  AnalysisHeading,
+  AnalysisPagination,
+  AnalysisTable,
+  QueryAlert,
+  SearchField,
+  SortHeader,
+} from '@/features/analysis/components'
 import { requireRole } from '@/lib/server/auth'
 import { createClient } from '@/lib/supabase/server'
+import { formatDateTime } from '@/lib/format'
 import { catalogSearchSchema, catalogFilter } from './schemas'
 export async function CatalogPage({
   params,
@@ -24,9 +33,13 @@ export async function CatalogPage({
   if (!parsed.success)
     return (
       <>
-        <h1>{title}</h1>
-        <p role="alert">Parámetros de consulta inválidos.</p>
-        <Link href={`/o/${slug}/catalog/${kind}`}>Restablecer consulta</Link>
+        <AnalysisHeading title={title} />
+        <QueryAlert
+          href={`/o/${slug}/catalog/${kind}`}
+          label="Restablecer consulta"
+        >
+          Parámetros de consulta inválidos.
+        </QueryAlert>
       </>
     )
   const { q, page, pageSize, sort } = parsed.data
@@ -51,116 +64,124 @@ export async function CatalogPage({
       pageSize: String(nextSize),
       sort: nextSort,
     })
+  const total = count ?? 0
+  const codeLabel = code === 'sku' ? 'SKU' : 'Código'
+  const header = (label: string, key: 'code' | 'name' | 'created_at') => (
+    <SortHeader
+      label={label}
+      href={href(1, sort === key ? `-${key}` : key)}
+      direction={
+        sort.replace('-', '') === key
+          ? sort.startsWith('-')
+            ? 'descending'
+            : 'ascending'
+          : undefined
+      }
+    />
+  )
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{title}</h1>
-      <nav aria-label="Catálogo" className="flex gap-4">
-        <Link className="underline" href={`/o/${slug}/catalog/products`}>
-          Productos
-        </Link>
-        <Link className="underline" href={`/o/${slug}/catalog/customers`}>
-          Clientes
-        </Link>
-      </nav>
-      <form className="flex flex-wrap items-end gap-3">
-        <div>
-          <label htmlFor="q">
-            Buscar por {code === 'sku' ? 'SKU' : 'código'} o nombre
-          </label>
-          <input
-            className="block border p-2"
-            id="q"
-            name="q"
+    <>
+      <AnalysisHeading title={title}>
+        {total.toLocaleString('es-MX')}{' '}
+        {kind === 'products' ? 'productos' : 'clientes'} importados
+      </AnalysisHeading>
+      <div className="analysis-controls">
+        <nav aria-label="Catálogo" className="analysis-switch">
+          {(['products', 'customers'] as const).map((item) => (
+            <Link
+              key={item}
+              href={`/o/${slug}/catalog/${item}`}
+              aria-current={item === kind ? 'page' : undefined}
+            >
+              {item === 'products' ? 'Productos' : 'Clientes'}
+            </Link>
+          ))}
+        </nav>
+        <form className="analysis-search">
+          <SearchField
+            label={`Buscar por ${code === 'sku' ? 'SKU' : 'código'} o nombre`}
             defaultValue={q}
             maxLength={200}
           />
-        </div>
-        <input type="hidden" name="sort" value={sort} />
-        <input type="hidden" name="pageSize" value={pageSize} />
-        <button className="rounded border px-4 py-2">Buscar</button>
-      </form>
-      <nav
-        aria-label="Orden y tamaño de página"
-        className="flex flex-wrap gap-3"
-      >
-        {(['code', 'name', 'created_at'] as const).map((key, index) => (
-          <Link
-            key={key}
-            className="underline"
-            href={href(1, sort === key ? `-${key}` : key)}
-          >
-            {
-              [code === 'sku' ? 'SKU' : 'Código', 'Nombre', 'Fecha de alta'][
-                index
-              ]
-            }
-            {sort.replace('-', '') === key
-              ? sort.startsWith('-')
-                ? ' ↓'
-                : ' ↑'
-              : ''}
-          </Link>
-        ))}
-        {[20, 50, 100].map((size) => (
-          <Link key={size} className="underline" href={href(1, sort, size)}>
-            {size.toLocaleString('es-MX')} por página
-          </Link>
-        ))}
-      </nav>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <caption className="sr-only">
-            Catálogo de {title.toLowerCase()}
-          </caption>
+          <input type="hidden" name="sort" value={sort} />
+          <input type="hidden" name="pageSize" value={pageSize} />
+          <button className="action-button compact">Buscar</button>
+        </form>
+      </div>
+      {data.length ? (
+        <AnalysisTable
+          label={`Catálogo de ${title.toLowerCase()}`}
+          className="text-table"
+        >
           <thead>
             <tr>
-              {[
-                code === 'sku' ? 'SKU' : 'Código',
-                'Nombre',
-                'Activo',
-                'Fecha de alta',
-              ].map((label) => (
-                <th className="p-2" scope="col" key={label}>
-                  {label}
-                </th>
-              ))}
+              {header('Nombre', 'name')}
+              {header(codeLabel, 'code')}
+              <SortHeader label="Estado" />
+              {header('Fecha de alta', 'created_at')}
             </tr>
           </thead>
           <tbody>
             {data.map((row) => (
               <tr key={row.id}>
-                <th className="p-2" scope="row">
-                  {'sku' in row ? row.sku : row.code}
+                <th scope="row">
+                  <span>{row.name}</span>
                 </th>
-                <td className="p-2">{row.name}</td>
-                <td className="p-2">{row.active ? 'Sí' : 'No'}</td>
-                <td className="p-2">
-                  {new Date(row.created_at).toLocaleString('es-MX')}
+                <td>{'sku' in row ? row.sku : row.code}</td>
+                <td>
+                  {row.active ? (
+                    'Activo'
+                  ) : (
+                    <span className="status-chip">Inactivo</span>
+                  )}
                 </td>
+                <td>{formatDateTime(row.created_at)}</td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </AnalysisTable>
+      ) : q ? (
+        <p>
+          Ningún {kind === 'products' ? 'producto' : 'cliente'} coincide con «
+          {q}».{' '}
+          <Link
+            className="underline"
+            href={
+              '?' + new URLSearchParams({ pageSize: String(pageSize), sort })
+            }
+          >
+            Quitar búsqueda
+          </Link>
+        </p>
+      ) : (
+        <p>
+          Aún no hay {title.toLowerCase()}. Se crean al importar{' '}
+          <Link className="underline" href={`/o/${slug}/imports/new`}>
+            un catálogo o ventas
+          </Link>
+          .
+        </p>
+      )}
+      <div className="catalog-footer">
+        <AnalysisPagination
+          page={page}
+          pages={Math.max(1, Math.ceil(total / pageSize))}
+          count={total}
+          href={(next) => href(next)}
+        />
+        <nav aria-label="Filas por página" className="analysis-switch">
+          {[20, 50, 100].map((size) => (
+            <Link
+              key={size}
+              href={href(1, sort, size)}
+              aria-current={size === pageSize ? 'page' : undefined}
+              aria-label={`${size} por página`}
+            >
+              {size}
+            </Link>
+          ))}
+        </nav>
       </div>
-      {!data.length && <p>No hay resultados.</p>}
-      <nav aria-label="Paginación" className="flex gap-4">
-        {page > 1 && (
-          <Link className="underline" href={href(page - 1)}>
-            Anterior
-          </Link>
-        )}
-        <span>
-          Página {page.toLocaleString('es-MX')} de{' '}
-          {Math.max(1, Math.ceil((count ?? 0) / pageSize)).toLocaleString(
-            'es-MX',
-          )}
-        </span>
-        {page * pageSize < (count ?? 0) && (
-          <Link className="underline" href={href(page + 1)}>
-            Siguiente
-          </Link>
-        )}
-      </nav>
-    </div>
+    </>
   )
 }

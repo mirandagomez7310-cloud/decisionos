@@ -18,7 +18,7 @@ it('un admin no ofrece owner y muestra el error de correo del servidor', async (
   const user = userEvent.setup()
   render(<InvitationForm organizationId="org" owner={false} />)
   expect(
-    screen.queryByRole('option', { name: 'owner' }),
+    screen.queryByRole('option', { name: 'Propietario' }),
   ).not.toBeInTheDocument()
   await user.type(
     screen.getByLabelText('Correo de invitación'),

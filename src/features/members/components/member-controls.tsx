@@ -2,7 +2,6 @@
 import { useActionState, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import type { OrgRole } from '@/lib/supabase/types'
-import { Button } from '@/components/ui/button'
 import { changeMemberRole, removeMember } from '../actions'
 import { RoleSelect } from './role-select'
 
@@ -42,10 +41,14 @@ export function MemberControls({
     '',
   )
   if (!owner && role === 'owner')
-    return <span>Solo un propietario puede editar este miembro.</span>
+    return (
+      <span className="member-locked">
+        Solo un propietario puede editar este miembro.
+      </span>
+    )
   return (
-    <div className="space-y-2">
-      <form className="flex flex-wrap gap-2" action={action}>
+    <div className="member-controls">
+      <form action={action}>
         <RoleSelect
           name="role"
           defaultValue={role}
@@ -53,19 +56,23 @@ export function MemberControls({
           label={'Rol de ' + email}
           disabled={pending}
         />
-        <Button disabled={pending} type="submit">
+        <button
+          className="secondary-button compact"
+          disabled={pending}
+          type="submit"
+        >
           Guardar rol
-        </Button>
+        </button>
       </form>
-      <Button
+      <button
         ref={trigger}
+        className="danger-link"
         type="button"
-        variant="destructive"
         disabled={pending}
         onClick={() => setOpen(true)}
       >
         Quitar miembro
-      </Button>
+      </button>
       {open && (
         <RemoveMemberDialog
           email={email}
@@ -76,7 +83,11 @@ export function MemberControls({
           onCloseAutoFocus={() => trigger.current?.focus()}
         />
       )}
-      {message && <p role="alert">{message}</p>}
+      {message && (
+        <p className="member-message" role="alert">
+          {message}
+        </p>
+      )}
     </div>
   )
 }

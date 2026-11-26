@@ -1,13 +1,8 @@
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from '@/components/ui/table'
+import { AnalysisTable } from '@/features/analysis/components'
 import type { OrgRole } from '@/lib/supabase/types'
+import { roleLabels } from '@/features/members/schemas'
 import { MemberControls } from '@/features/members/components/member-controls'
+import type { ReactNode } from 'react'
 export type MemberRow = {
   user_id: string
   email: string
@@ -17,28 +12,38 @@ export type MemberRow = {
   owner: boolean
 }
 const dateFormat = new Intl.DateTimeFormat('es-MX', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
   timeZone: 'America/Mexico_City',
 })
-export function MembersTable({ data }: { data: MemberRow[] }) {
+/** `head` lleva las celdas de cabecera (ordenables desde la página): Correo, Rol, Fecha de alta. */
+export function MembersTable({
+  data,
+  head,
+}: {
+  data: MemberRow[]
+  head: ReactNode
+}) {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Correo</TableHead>
-          <TableHead>Rol</TableHead>
-          <TableHead>Fecha de alta</TableHead>
-          <TableHead>Acciones</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
+    <AnalysisTable label="Miembros de la organización" className="text-table">
+      <thead>
+        <tr>
+          {head}
+          <th scope="col">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
         {data.map((member) => (
-          <TableRow key={member.user_id}>
-            <TableCell>{member.email}</TableCell>
-            <TableCell>{member.role}</TableCell>
-            <TableCell>
-              {dateFormat.format(new Date(member.created_at))}
-            </TableCell>
-            <TableCell>
+          <tr key={member.user_id}>
+            <td className="member-email">{member.email}</td>
+            <td>{roleLabels[member.role]}</td>
+            <td>
+              {dateFormat
+                .format(new Date(member.created_at))
+                .replaceAll('.', '')}
+            </td>
+            <td>
               <MemberControls
                 organizationId={member.organization_id}
                 userId={member.user_id}
@@ -46,10 +51,10 @@ export function MembersTable({ data }: { data: MemberRow[] }) {
                 role={member.role}
                 owner={member.owner}
               />
-            </TableCell>
-          </TableRow>
+            </td>
+          </tr>
         ))}
-      </TableBody>
-    </Table>
+      </tbody>
+    </AnalysisTable>
   )
 }

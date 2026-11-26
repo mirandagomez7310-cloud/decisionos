@@ -16,7 +16,8 @@ const wholeMoney = new Intl.NumberFormat('es-MX', {
   maximumFractionDigits: 0,
 })
 /** Cifras de cartel (tarjetas KPI): sin centavos; el importe exacto va en comparaciones y tablas. */
-export const formatMoneyWhole = (value: number) => minus(wholeMoney.format(value))
+export const formatMoneyWhole = (value: number) =>
+  minus(wholeMoney.format(value))
 export const formatMoneyChange = (value: number) =>
   (value >= 0 ? '+' : '') + formatMoney(value)
 export const formatPercent = (value: number) =>
@@ -72,3 +73,14 @@ export const formatAxisMoney = (value: number) =>
       .format(value)
       .replace(/\s*k$/, ' mil'),
   )
+const dateTime = new Intl.DateTimeFormat('es-MX', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: 'America/Mexico_City',
+})
+/** Fecha y hora de un evento (importación, auditoría), en hora del centro de México. */
+export const formatDateTime = (iso: string) =>
+  dateTime.format(new Date(iso)).replaceAll(' de ', ' ').replaceAll('.', '')

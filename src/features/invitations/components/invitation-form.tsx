@@ -1,6 +1,5 @@
 'use client'
 import { useActionState } from 'react'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RoleSelect } from '@/features/members/components/role-select'
@@ -36,8 +35,8 @@ export function InvitationForm({
   )
   return (
     <>
-      <form className="flex flex-wrap items-end gap-3" action={action}>
-        <div>
+      <form className="invite-form" action={action}>
+        <div className="form-field">
           <Label htmlFor="invitation-email">Correo de invitación</Label>
           <Input
             id="invitation-email"
@@ -50,7 +49,7 @@ export function InvitationForm({
             }
           />
           {state.emailError && (
-            <p id="invitation-email-error" role="alert">
+            <p id="invitation-email-error" className="field-error" role="alert">
               {state.emailError}
             </p>
           )}
@@ -62,17 +61,19 @@ export function InvitationForm({
           label="Rol de invitación"
           disabled={pending}
         />
-        <Button type="submit" disabled={pending}>
+        <button className="action-button" type="submit" disabled={pending}>
           Invitar
-        </Button>
+        </button>
       </form>
-      {state.message && <p role="alert">{state.message}</p>}
+      {state.message && (
+        <p className="field-error" role="alert">
+          {state.message}
+        </p>
+      )}
       {state.url && (
-        <div className="space-y-2">
+        <div className="invite-link">
           <p>Guarda este enlace ahora. Solo se muestra una vez.</p>
-          <output className="block break-all" aria-label="Enlace de invitación">
-            {state.url}
-          </output>
+          <output aria-label="Enlace de invitación">{state.url}</output>
           <CopyLink url={state.url} />
         </div>
       )}

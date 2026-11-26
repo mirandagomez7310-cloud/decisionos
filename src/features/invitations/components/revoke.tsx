@@ -1,6 +1,5 @@
 'use client'
 import { useActionState } from 'react'
-import { Button } from '@/components/ui/button'
 import { revokeInvitation } from '../actions'
 
 export function Revoke({
@@ -19,11 +18,15 @@ export function Revoke({
     }
   }, '')
   return (
-    <form action={action}>
-      <Button type="submit" variant="outline" disabled={pending}>
+    <form className="revoke-form" action={action}>
+      <button className="danger-link" type="submit" disabled={pending}>
         Revocar
-      </Button>
-      {message && <p role="alert">{message}</p>}
+      </button>
+      {message && (
+        <p className="field-error" role="alert">
+          {message}
+        </p>
+      )}
     </form>
   )
 }

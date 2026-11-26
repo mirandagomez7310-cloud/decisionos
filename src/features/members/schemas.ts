@@ -13,3 +13,9 @@ export const membersSearchSchema = z.object({
     .enum(['email', 'role', 'created_at', '-email', '-role', '-created_at'])
     .default('created_at'),
 })
+export const roleLabels = {
+  owner: 'Propietario',
+  admin: 'Administrador',
+  analyst: 'Analista',
+  viewer: 'Lector',
+} as const satisfies Record<z.infer<typeof roleSchema>, string>

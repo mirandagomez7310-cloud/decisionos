@@ -62,6 +62,7 @@ test('owner consulta valor exacto, costos y productos sin movimiento después de
   const expected = new Intl.NumberFormat('es-MX', {
     style: 'currency',
     currency: 'MXN',
+    maximumFractionDigits: 0,
   }).format(valueInCents / 100)
 
   const viewport = page.viewportSize()!
@@ -83,7 +84,7 @@ test('owner consulta valor exacto, costos y productos sin movimiento después de
   await expect(
     page
       .getByRole('heading', { name: 'Valor de inventario', exact: true })
-      .locator('..')
+      .locator('xpath=ancestor::section[1]')
       .locator('.dashboard-figure'),
   ).toHaveText(expected)
   const rows = page.getByRole('table').locator('tbody tr')
@@ -93,8 +94,8 @@ test('owner consulta valor exacto, costos y productos sin movimiento después de
   await expect(stale.getByText('Nunca', { exact: true })).toBeVisible()
   const missing = rows.filter({ hasText: 'Producto sin costo' })
   await expect(missing.getByText('Sin costo', { exact: true })).toBeVisible()
-  await expect(missing.locator('td').nth(2)).toBeEmpty()
-  await expect(missing.locator('td').nth(3)).toBeEmpty()
+  await expect(missing.locator('td').nth(0)).toHaveText('—')
+  await expect(missing.locator('td').nth(2)).toHaveText('—')
   await expect(rows.filter({ hasText: 'Producto vendido' })).toContainText(
     '10 días sin venta',
   )

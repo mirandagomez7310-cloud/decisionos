@@ -1,4 +1,9 @@
-import Link from 'next/link'
+import {
+  AnalysisHeading,
+  AnalysisPagination,
+  QueryAlert,
+  SortHeader,
+} from '@/features/analysis/components'
 import { requireRole } from '@/lib/server/auth'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -21,11 +26,13 @@ export default async function MembersPage({
   if (!parsed.success)
     return (
       <>
-        <h1>Miembros</h1>
-        <p role="alert">Parámetros de consulta inválidos.</p>
-        <Link href={'/o/' + slug + '/settings/members'}>
-          Restablecer consulta
-        </Link>
+        <AnalysisHeading title="Miembros" />
+        <QueryAlert
+          href={'/o/' + slug + '/settings/members'}
+          label="Restablecer consulta"
+        >
+          Parámetros de consulta inválidos.
+        </QueryAlert>
       </>
     )
   const { page, pageSize, sort } = parsed.data
@@ -79,56 +86,52 @@ export default async function MembersPage({
       pageSize: String(nextSize),
       sort: nextSort,
     })
+  const header = (label: string, key: typeof field) => (
+    <SortHeader
+      label={label}
+      href={href(1, sort === key ? `-${key}` : key)}
+      direction={
+        field === key
+          ? sort.startsWith('-')
+            ? 'descending'
+            : 'ascending'
+          : undefined
+      }
+    />
+  )
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Miembros</h1>
-      <nav
-        aria-label="Orden y tamaño de página"
-        className="flex flex-wrap gap-3"
-      >
-        {(['email', 'role', 'created_at'] as const).map((key, index) => (
-          <Link
-            key={key}
-            className="underline"
-            href={href(1, sort === key ? `-${key}` : key)}
-          >
-            {['Correo', 'Rol', 'Fecha de alta'][index]}
-            {field === key ? (sort.startsWith('-') ? ' ↓' : ' ↑') : ''}
-          </Link>
-        ))}
-        {[20, 50, 100].map((size) => (
-          <Link key={size} className="underline" href={href(1, sort, size)}>
-            {size} por página
-          </Link>
-        ))}
-      </nav>
+    <>
+      <AnalysisHeading title="Miembros">
+        {rows.length} {rows.length === 1 ? 'persona tiene' : 'personas tienen'}{' '}
+        acceso a {organization.name}
+      </AnalysisHeading>
       {rows.length ? (
         <MembersTable
           data={rows.slice((page - 1) * pageSize, page * pageSize)}
+          head={
+            <>
+              {header('Correo', 'email')}
+              {header('Rol', 'role')}
+              {header('Fecha de alta', 'created_at')}
+            </>
+          }
         />
       ) : (
         <p>Aún no hay miembros</p>
       )}
-      <nav aria-label="Paginación" className="flex gap-4">
-        {page > 1 && (
-          <Link className="underline" href={href(page - 1)}>
-            Anterior
-          </Link>
-        )}
-        <span>
-          Página {page} de {Math.max(1, Math.ceil(rows.length / pageSize))}
-        </span>
-        {page * pageSize < rows.length && (
-          <Link className="underline" href={href(page + 1)}>
-            Siguiente
-          </Link>
-        )}
-      </nav>
+      {rows.length > pageSize && (
+        <AnalysisPagination
+          page={page}
+          pages={Math.ceil(rows.length / pageSize)}
+          count={rows.length}
+          href={(next) => href(next)}
+        />
+      )}
       <InvitationsPanel
         organizationId={organization.id}
         owner={role === 'owner'}
         invitations={invitations}
       />
-    </div>
+    </>
   )
 }

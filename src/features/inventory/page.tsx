@@ -4,13 +4,21 @@ import {
   AnalysisPagination,
   AnalysisSummary,
   AnalysisTable,
+  MetricIcon,
   QueryAlert,
+  SearchField,
   SortHeader,
 } from '@/features/analysis/components'
 import type { AnalysisPageProps } from '@/features/analysis/page'
 import { tableHref } from '@/features/analysis/shared'
 import { EmptyImport } from '@/components/empty-import'
-import { formatDay, formatMoney, formatPercent } from '@/lib/format'
+import { Package, PackageX } from 'lucide-react'
+import {
+  formatDay,
+  formatMoney,
+  formatMoneyWhole,
+  formatPercent,
+} from '@/lib/format'
 import { requireRole } from '@/lib/server/auth'
 import { staleSnapshotDays } from '@/lib/server/metrics/snapshot-age'
 import { getInventory } from './queries'
@@ -115,50 +123,61 @@ export async function InventoryPage({
   return (
     <>
       {heading}
-      <div className="dashboard-metrics inventory-metrics">
-        <section className="dashboard-metric">
-          <h2 className="label-condensed">Valor sin movimiento</h2>
+      <div className="dashboard-metrics">
+        <section className="dashboard-metric card">
+          <div className="metric-head">
+            <MetricIcon tone="--m-inventory">
+              <Package />
+            </MetricIcon>
+            <h2>Valor de inventario</h2>
+          </div>
           <p className="figure dashboard-figure">
-            {formatMoney(summary.stale_value)}
+            {formatMoneyWhole(summary.inventory_value)}
           </p>
           <p className="metric-comparison">
-            {number.format(summary.stale_count)} productos
-            {summary.stale_share_pct !== null &&
-              ` · ${formatPercent(summary.stale_share_pct)} del valor total`}
+            {summary.days_on_hand === null
+              ? 'Sin ventas con costo en 90 días'
+              : `${number.format(summary.days_on_hand)} días de inventario`}
+            {summary.turnover !== null &&
+              ` · rota ${turnover.format(summary.turnover)} veces al año`}
           </p>
         </section>
-        <section className="dashboard-metric">
-          <h2 className="label-condensed">Días de inventario</h2>
-          {summary.days_on_hand === null ? (
-            <p className="missing-cost">Sin ventas con costo en 90 días</p>
-          ) : (
-            <p className="figure dashboard-figure">
-              {number.format(summary.days_on_hand)}
-            </p>
-          )}
-        </section>
-        <section className="dashboard-metric">
-          <h2 className="label-condensed">Valor de inventario</h2>
+        <section className="dashboard-metric card">
+          <div className="metric-head">
+            <MetricIcon tone="--m-inventory">
+              <PackageX />
+            </MetricIcon>
+            <h2>Valor sin movimiento</h2>
+          </div>
           <p className="figure dashboard-figure">
-            {formatMoney(summary.inventory_value)}
+            {formatMoneyWhole(summary.stale_value)}
+            {summary.stale_share_pct !== null && (
+              <span className="margin-rate">
+                {' '}
+                · {formatPercent(summary.stale_share_pct)}
+              </span>
+            )}
           </p>
-        </section>
-        <section className="dashboard-metric">
-          <h2 className="label-condensed">Rotación anual</h2>
-          {summary.turnover === null ? (
-            <p className="missing-cost">Sin rotación calculada</p>
-          ) : (
-            <p className="figure dashboard-figure">
-              {turnover.format(summary.turnover)}
-              <span className="margin-rate">veces al año</span>
-            </p>
-          )}
+          <p className="metric-comparison">
+            Capital en productos sin ventas en 90 días
+          </p>
+          <AnalysisSummary
+            bar
+            parts={[
+              ['Sin movimiento', summary.stale_count, 'risk'],
+              [
+                'Con movimiento',
+                summary.product_count - summary.stale_count,
+                'flat',
+              ],
+            ]}
+          />
         </section>
       </div>
       {summary.value_coverage !== null && summary.value_coverage < 100 && (
         <AnalysisSummary>
-          Valor calculado sobre el {number.format(summary.value_coverage)} % de
-          los productos; el resto no tiene costo.{' '}
+          Valor sobre el {number.format(summary.value_coverage)} % de los
+          productos; el resto no tiene costo.{' '}
           <Link className="underline" href={`/o/${slug}/imports/new`}>
             Cómo importar costos
           </Link>
@@ -184,15 +203,7 @@ export async function InventoryPage({
         </nav>
         <form method="get" action={path} className="analysis-search">
           <input type="hidden" name="filtro" value={search.filtro} />
-          <label>
-            Buscar por nombre
-            <input
-              type="search"
-              name="q"
-              defaultValue={search.q}
-              maxLength={80}
-            />
-          </label>
+          <SearchField defaultValue={search.q} />
           <label>
             Orden
             <select name="orden" defaultValue={search.orden}>
@@ -203,7 +214,7 @@ export async function InventoryPage({
               ))}
             </select>
           </label>
-          <button className="action-button" type="submit">
+          <button className="action-button compact" type="submit">
             Aplicar
           </button>
         </form>
@@ -214,11 +225,12 @@ export async function InventoryPage({
           <thead>
             <tr>
               {header('Producto', 'nombre')}
-              <SortHeader label="Existencia" />
-              <SortHeader label="Costo unitario" />
+              {/* La cifra de la vista va junto al nombre: en móvil es lo que se ve sin desplazar. */}
               {header('Valor', 'valor')}
-              {header('Días de inventario', 'dias')}
               {header('Última venta', 'sin_venta')}
+              {header('Días de inventario', 'dias')}
+              <SortHeader label="Costo unitario" />
+              <SortHeader label="Existencia" />
             </tr>
           </thead>
           <tbody>
@@ -233,20 +245,10 @@ export async function InventoryPage({
                     <span className="risk-label risk-cell">Sin movimiento</span>
                   )}
                 </th>
-                <td>{number.format(row.quantity)}</td>
                 <td>
-                  {row.unit_cost === null ? (
-                    <span className="label-condensed">Sin costo</span>
-                  ) : (
-                    formatMoney(row.unit_cost)
-                  )}
-                </td>
-                <td>
-                  {row.inventory_value !== null &&
-                    formatMoney(row.inventory_value)}
-                </td>
-                <td>
-                  {row.days_on_hand !== null && number.format(row.days_on_hand)}
+                  {row.inventory_value === null
+                    ? '—'
+                    : formatMoney(row.inventory_value)}
                 </td>
                 <td>
                   {row.last_sold_on === null
@@ -254,10 +256,25 @@ export async function InventoryPage({
                     : formatDay(row.last_sold_on)}
                   {row.days_since_sale !== null && (
                     <span className="label-condensed analysis-code">
-                      {number.format(row.days_since_sale)} días sin venta
+                      {row.days_since_sale === 0
+                        ? 'Vendido hoy'
+                        : `${number.format(row.days_since_sale)} ${row.days_since_sale === 1 ? 'día' : 'días'} sin venta`}
                     </span>
                   )}
                 </td>
+                <td>
+                  {row.days_on_hand === null
+                    ? '—'
+                    : number.format(row.days_on_hand)}
+                </td>
+                <td>
+                  {row.unit_cost === null ? (
+                    <span className="label-condensed">Sin costo</span>
+                  ) : (
+                    formatMoney(row.unit_cost)
+                  )}
+                </td>
+                <td>{number.format(row.quantity)}</td>
               </tr>
             ))}
           </tbody>

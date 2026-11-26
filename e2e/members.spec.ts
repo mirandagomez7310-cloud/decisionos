@@ -241,7 +241,7 @@ test('admin no ve owner y la acción rechaza una solicitud manipulada', async ({
     .getByLabel('Rol de invitación', { exact: true })
     .selectOption('viewer')
   await expect(
-    page.getByRole('option', { name: 'owner', exact: true }),
+    page.getByRole('option', { name: 'Propietario', exact: true }),
   ).toHaveCount(0)
   await page.route('**/settings/members', async (route) => {
     const request = route.request()
